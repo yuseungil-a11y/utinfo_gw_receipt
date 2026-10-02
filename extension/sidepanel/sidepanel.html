@@ -8,7 +8,10 @@
 <body>
   <header>
     <h1>카드영수증 도우미 <span id="appVersion" class="ver"></span></h1>
-    <button id="btnSettings" class="ghost" title="설정">⚙ 설정</button>
+    <div class="row headBtns">
+      <button id="btnManual" class="ghost" title="사용 매뉴얼을 새 탭으로 엽니다">📖 매뉴얼</button>
+      <button id="btnSettings" class="ghost" title="설정">⚙ 설정</button>
+    </div>
   </header>
 
   <div id="updateBanner" hidden></div>
@@ -49,8 +52,8 @@
     <fieldset class="approval">
       <legend>결재선 <small>(이름을 쉼표나 띄어쓰기로 구분, 적은 순서대로 지정. 한 번 저장하면 계속 사용. 같은 이름이 여럿이면 "홍길동(부서)")</small></legend>
       <label>합의자 <input id="lineConsensual" type="text" placeholder="없으면 비워 두기"></label>
-      <label>승인자 <input id="lineApprover" type="text" placeholder="예: 김현수, 김영희, 신동헌, 길기순"></label>
-      <label>수신자 <input id="lineReceiver" type="text" placeholder="예: 김영희, 김미정, 임혜리"></label>
+      <label>승인자 <input id="lineApprover" type="text" placeholder="예: 홍길동, 김철수, 이영희"></label>
+      <label>수신자 <input id="lineReceiver" type="text" placeholder="예: 박민수, 최지은"></label>
       <label class="check"><input id="autoApproval" type="checkbox"> 그룹웨어에 입력할 때 결재선도 자동 지정</label>
       <div class="row">
         <button id="btnLine" class="ghost">결재선만 지금 화면에 넣기</button>

@@ -678,6 +678,8 @@ function updateSummary() {
 // ---------- 시작 ----------
 $("#appVersion").textContent = `v${chrome.runtime.getManifest().version}`;
 renderTabs();
+// 사용 매뉴얼(확장 프로그램에 포함된 manual/index.html)을 새 탭으로
+$("#btnManual").onclick = () => chrome.tabs.create({ url: chrome.runtime.getURL("manual/index.html") });
 // 그룹웨어에서 다른 요청 화면으로 옮기거나 다른 탭으로 바꾸면 맞는 기능 탭으로 전환(이 창의 활성 탭만)
 const followTab = (tab) => {
   if (!tab?.active || !tab.url) return;

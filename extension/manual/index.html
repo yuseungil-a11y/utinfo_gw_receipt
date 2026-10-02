@@ -1,0 +1,228 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>유티허브 영수증 등록 도우미 사용 매뉴얼 v0.4.0</title><style>
+@page { size: A4; margin: 16mm 15mm 16mm; }
+@page :first { margin: 0; }
+:root { --navy:#13132d; --blue:#144194; --sky:#36a9e1; --orange:#f39200; --green:#94c11e; --ink:#3d3c3c; --ink2:#1d1d1b; --muted:#706f6f; --line:#dadada; }
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { word-break: keep-all; margin: 0; font: 10.2pt/1.7 "Pretendard", "Malgun Gothic", sans-serif; color: var(--ink); background: #fff; }
+.cover { position: relative; width: 210mm; height: 297mm; overflow: hidden; background: var(--navy); color: #fff; page-break-after: always; }
+.cover .bg { position: absolute; top: 0; right: -95mm; height: 100%; opacity: .95; }
+.cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(19,19,45,.92) 0%, rgba(19,19,45,.55) 55%, rgba(19,19,45,0) 100%); }
+.cv { position: absolute; left: 22mm; top: 62mm; right: 20mm; z-index: 1; }
+.cv .tag { color: var(--sky); font-size: 11pt; letter-spacing: .3px; margin: 18px 0 10px; }
+.cv .ct { font-size: 36pt; line-height: 1.22; font-weight: 800; margin: 0; border: 0; color: #fff; }
+.cv .sub { font-size: 14pt; font-weight: 500; margin: 14px 0 0; color: #e6e8ea; }
+.cv .sub span { color: var(--orange); font-weight: 700; }
+.cv .meta { list-style: none; padding: 0; margin: 34mm 0 0; border-left: 3px solid var(--sky); padding-left: 12px; font-size: 10.5pt; color: #cdd1d5; }
+.cv .meta li { margin: 4px 0; } .cv .meta b { display: inline-block; width: 52px; color: #fff; font-weight: 600; }
+.cover .logo { position: absolute; left: 20mm; bottom: 20mm; width: 62mm; z-index: 1; }
+h1 { font-size: 19pt; color: var(--ink2); }
+h2 { font-size: 14.5pt; font-weight: 800; color: var(--ink2); margin: 26px 0 10px; padding: 0 0 6px 12px; border-left: 5px solid var(--blue); border-bottom: 1px solid var(--line); page-break-after: avoid; }
+h2:first-child { margin-top: 0; }
+h3 { font-size: 11.5pt; font-weight: 700; color: var(--blue); margin: 18px 0 6px; page-break-after: avoid; }
+h3::before { content: ""; display: inline-block; width: 7px; height: 7px; background: var(--orange); margin-right: 7px; vertical-align: 2px; }
+p strong, li strong, td strong { color: var(--ink2); }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 12px; font-size: 9.3pt; }
+tr { break-inside: avoid; } thead { display: table-header-group; }
+th, td { word-break: keep-all; border: 1px solid var(--line); padding: 5px 8px; vertical-align: top; text-align: left; }
+th { background: var(--navy); color: #fff; font-weight: 600; border-color: var(--navy); }
+tbody tr:nth-child(even) td { background: #f4f5f6; }
+code { background: #eef4fb; color: var(--blue); padding: 0 4px; border-radius: 3px; font-size: 8.8pt; font-family: Consolas, "Pretendard", monospace; }
+figure { margin: 12px 0; text-align: center; page-break-inside: avoid; }
+figure img { max-width: 100%; max-height: 230mm; border: 1px solid var(--line); }
+figcaption { font-size: 8.8pt; color: var(--muted); margin-top: 5px; }
+figcaption::before { content: "▲ "; color: var(--sky); }
+a { color: var(--blue); text-decoration: none; }
+li { margin: 2px 0; } li::marker { color: var(--blue); font-weight: 700; }
+body { max-width: 900px; margin: 0 auto; padding: 0 20px 48px; }
+.appbar { position: sticky; top: 0; z-index: 2; margin: 0 -20px 20px; padding: 14px 20px; background: var(--navy); color: #fff; display: flex; align-items: center; gap: 12px; }
+.appbar strong { font-size: 15pt; font-weight: 800; } .appbar span { color: #cdd1d5; font-size: 10pt; }
+.appbar .v { margin-left: auto; color: var(--sky); font-weight: 600; }
+figure img { max-height: none; }
+@media print { .appbar { position: static; } }</style></head><body><header class="appbar"><svg viewBox="-50 -50 100 100" width="30" height="30">
+  <g stroke-width="9" stroke-linecap="butt">
+  <line x1="-30" y1="-40" x2="30" y2="40" stroke="#f39200"/><line x1="30" y1="-40" x2="-30" y2="40" stroke="#94c11e"/>
+  <line x1="0" y1="-48" x2="0" y2="48" stroke="#36a9e1"/><line x1="-48" y1="0" x2="48" y2="0" stroke="#36a9e1"/></g></svg><strong>UTHub 카드영수증 도우미</strong><span>사용 매뉴얼</span><b class="v">v0.4.0</b></header>
+<main><p>카드영수증 이미지를 넣으면 Claude가 지출일·금액·지출 유형을 읽어 UTHub 지급품의(개인·법인) 화면에 영수증 수만큼 자동 입력하는 크롬 확장 프로그램입니다. 사용자는 프로젝트를 확인하고 완료(요청)만 누르면 됩니다. 결재선(합의자·승인자·수신자)은 설정에 한 번 저장해 두면 자동으로 들어갑니다.</p>
+<h2>1. 배포 방식</h2>
+<p>설치 파일은 <strong>사내 게시판</strong>에 올려 배포하고, 업데이트만 <strong>GitHub</strong>를 씁니다. 각 PC는 GitHub를 1시간마다 확인해 새 버전을 자동으로 설치합니다.</p>
+<table><thead><tr><th>구성 요소</th><th>하는 일</th><th>위치</th></tr></thead><tbody><tr><td>GitHub Release</td><td>업데이트용 ZIP, 게시판용 설치 ZIP, 스크립트 보관</td><td><a href="https://github.com/yuseungil-a11y/utinfo_gw_receipt/releases/latest">최신 Release</a></td></tr><tr><td>설치 ZIP (install.ps1 포함)</td><td>PC당 1회: 압축 풀고 install.ps1 실행 → 설치와 자동 업데이트 등록</td><td>사내 게시판</td></tr><tr><td>update.ps1</td><td>1시간마다와 로그인 시: 새 버전이면 받아서 설치 폴더 교체</td><td><code>%LOCALAPPDATA%\UTGwReceipt</code></td></tr><tr><td>확장 프로그램</td><td>크롬 시작 시 새 버전 확인(아이콘에 UP 표시), 상단 '지금 업데이트' 버튼, 30분마다 설치 폴더 버전 확인 후 스스로 다시 로드</td><td>크롬</td></tr></tbody></table>
+<ul>
+<li>업데이트 후에도 설치 폴더가 같아서 API 키 등 설정이 그대로 유지됩니다.
+</li>
+<li>사용자가 많아지면 크롬 웹스토어 비공개 등록을 검토합니다. 개발자 모드 없이 설치되고 업데이트도 크롬이 맡습니다.
+</li></ul>
+<h2>2. 설치 (직원용, PC당 1회)</h2>
+<p>게시판의 설치 파일로 한 번만 설치하면 이후 업데이트는 자동입니다. 관리자 권한은 필요 없고 5분이면 끝납니다.</p>
+<ol>
+<li>사내 게시판에서 <code>유티허브 영수증 등록 도우미 v&lt;버전&gt;.zip</code>을 내려받아 압축을 풉니다. 풀린 폴더에 <code>install.ps1</code>과 <code>gw-receipt-helper</code> 폴더가 있습니다.
+</li>
+<li><code>install.ps1</code>을 우클릭 → <strong>PowerShell에서 실행</strong>을 누릅니다. 보안 확인이 뜨면 열기(또는 R)를 고릅니다.
+<ul>
+<li>실행이 막히면 그 폴더에서 PowerShell을 열고 <code>powershell -ExecutionPolicy Bypass -File .\install.ps1</code>을 입력합니다.
+</li></ul>
+</li>
+<li>"설치 완료"가 나오면 <code>%LOCALAPPDATA%\UTGwReceipt\gw-receipt-helper</code>에 설치된 것이고, 이 경로가 클립보드에 복사됩니다. 설치 직후 GitHub에서 최신 버전을 한 번 확인해, 게시판 파일이 예전 버전이면 자동으로 새 버전을 받습니다. Enter를 눌러 창을 닫습니다. 내려받은 압축 폴더는 이제 지워도 됩니다.
+</li>
+<li>크롬 주소창에 <code>chrome://extensions</code>를 입력하고 오른쪽 위 <strong>개발자 모드</strong>를 켭니다.
+</li>
+<li><strong>압축해제된 확장 프로그램을 로드합니다</strong>를 누르고, 폴더 선택 창 주소창에 Ctrl+V로 경로를 붙여넣어 그 폴더를 선택합니다.
+</li>
+<li>"UTHub 카드영수증 도우미"가 목록에 나타나면 성공입니다. 퍼즐(🧩) 아이콘에서 핀(📌)을 눌러 툴바에 고정합니다.
+</li></ol>
+<table><thead><tr><th>확인 항목</th><th>방법</th></tr></thead><tbody><tr><td>자동 업데이트 등록 여부</td><td>작업 스케줄러에 <code>UTGwReceipt-AutoUpdate</code> 작업이 있음</td></tr><tr><td>업데이트 기록</td><td><code>%LOCALAPPDATA%\UTGwReceipt\update.log</code></td></tr><tr><td>제거</td><td>설치 폴더 <code>%LOCALAPPDATA%\UTGwReceipt</code>의 <code>uninstall.ps1</code> 실행 후 <code>chrome://extensions</code>에서 삭제</td></tr></tbody></table>
+<p>설치 폴더(<code>%LOCALAPPDATA%\UTGwReceipt</code>)를 옮기거나 지우지 마세요. 크롬이 다른 확장 프로그램으로 인식해 API 키 등 설정을 다시 입력해야 합니다.</p>
+<h3>맥북(macOS) 설치</h3>
+<p>같은 설치 파일에 맥용 스크립트가 함께 들어 있습니다. 설치 후 자동 업데이트와 <strong>지금 업데이트</strong> 버튼도 윈도우와 같이 동작합니다.</p>
+<ol>
+<li>게시판의 설치 파일(zip)을 내려받아 더블클릭해 압축을 풉니다.
+</li>
+<li><strong>터미널</strong>(Cmd+Space로 Spotlight를 열고 '터미널' 검색)을 열고 <code>bash </code> (뒤에 한 칸 띄움)를 입력한 뒤, 풀린 폴더의 <code>install-mac.sh</code> 파일을 터미널 창에 끌어다 놓고 Enter를 누릅니다.
+</li>
+<li>"설치 완료"가 나오면 크롬 주소창에 <code>chrome://extensions</code>를 입력하고 오른쪽 위 <strong>개발자 모드</strong>를 켭니다.
+</li>
+<li><strong>압축해제된 확장 프로그램을 로드합니다</strong>를 누르고, 폴더 선택 창에서 <strong>Cmd+Shift+G</strong> → <strong>Cmd+V</strong>(경로가 복사되어 있음) → Enter → <strong>선택</strong>을 누릅니다.
+</li>
+<li><strong>지금 업데이트</strong>를 처음 누를 때 크롬이 "UTGwReceipt Updater 열기"를 물으면 허용합니다.
+</li></ol>
+<table><thead><tr><th>항목</th><th>맥에서의 위치</th></tr></thead><tbody><tr><td>설치 폴더</td><td><code>~/Library/Application Support/UTGwReceipt</code></td></tr><tr><td>자동 업데이트</td><td>launchd 작업 <code>kr.co.utinfo.gwreceipt.update</code> (1시간마다·로그인 시)</td></tr><tr><td>업데이트 기록</td><td>설치 폴더의 <code>update.log</code></td></tr><tr><td>제거</td><td>터미널에서 <code>bash "$HOME/Library/Application Support/UTGwReceipt/uninstall-mac.sh"</code> 실행 후 <code>chrome://extensions</code>에서 삭제</td></tr></tbody></table>
+<ul>
+<li>"터미널이 다운로드 폴더에 접근하려고 합니다" 창이 뜨면 <strong>허용</strong>을 누릅니다.
+</li>
+<li>설치 후 "백그라운드 항목이 추가됨" 알림이 뜨면 정상입니다(자동 업데이트 작업). 시스템 설정 &gt; 로그인 항목에서 이 항목(bash)을 끄면 자동 업데이트가 멈추니 켜 둡니다.
+</li>
+<li>문제 해결(6장)의 <code>install.ps1</code>은 맥에서 <code>install-mac.sh</code>, <code>%LOCALAPPDATA%\UTGwReceipt</code>는 <code>~/Library/Application Support/UTGwReceipt</code>, "PowerShell 열기"는 "UTGwReceipt Updater 열기"로 바꿔 읽습니다.
+</li></ul>
+<p><strong>업데이트</strong></p>
+<ul>
+<li>새 버전이 나오면 1시간 안에 PC로 받아지고, 크롬에는 30분 안에(사이드패널을 열어 둔 동안은 닫은 뒤) 반영됩니다. 바로 받고 싶으면 사이드패널 상단에 뜨는 <strong>지금 업데이트</strong> 버튼을 누릅니다.
+</li>
+<li>처음 누를 때 크롬이 "PowerShell을 열까요?"를 물으면 <strong>열기</strong>를 누릅니다('항상 허용'을 체크하면 다음부터 묻지 않음). 업데이트가 끝나면 사이드패널이 닫힙니다. 툴바 아이콘을 다시 누르면 새 버전으로 열립니다.
+</li>
+<li>크롬을 켤 때도 새 버전을 확인해, 있으면 툴바 아이콘에 <strong>UP</strong>이 표시됩니다.
+</li></ul>
+<h2>3. Claude API 키 발급 (직원용)</h2>
+<p>API 키는 각자 <a href="https://platform.claude.com">Claude Console</a>에서 만들어 확장 프로그램에 직접 넣습니다. 키는 만들 때 한 번만 보이므로 바로 붙여넣습니다.</p>
+<table><thead><tr><th>계정 종류</th><th>비용 청구</th><th>준비</th></tr></thead><tbody><tr><td>회사 조직 계정 (권장)</td><td>회사</td><td>담당자가 보낸 Claude Console 초대 메일을 수락. 퇴사하면 키가 자동으로 멈춤</td></tr><tr><td>개인 계정</td><td>본인</td><td>platform.claude.com에서 가입하고 결제 수단 등록·크레딧 충전</td></tr></tbody></table>
+<ol>
+<li><a href="https://platform.claude.com">platform.claude.com</a>에 로그인합니다. 회사 조직으로 쓰는 경우 초대받은 회사 메일 계정으로 로그인합니다.
+</li>
+<li><a href="https://platform.claude.com/settings/keys">Settings → API keys</a>를 엽니다.
+</li>
+<li><strong>Create key</strong>를 누릅니다.
+<ul>
+<li>이름: 알아볼 수 있게 예) <code>uthub-영수증-홍길동</code>
+</li>
+<li>만료(Expiration): 담당자 안내대로. 만료되면 새로 만들어 다시 넣습니다
+</li>
+<li>Linked account: 본인
+</li>
+<li>Workspace: 담당자가 지정한 워크스페이스(있는 경우)
+</li></ul>
+</li>
+<li><code>sk-ant-</code>로 시작하는 키가 화면에 <strong>한 번만</strong> 표시됩니다. 복사 버튼으로 복사합니다.
+</li>
+<li>크롬 사이드패널 <strong>⚙ 설정 → Claude API 키</strong>에 붙여넣고 <strong>저장</strong>합니다(4장 참고).
+</li></ol><ul>
+<li>키는 비밀번호와 같습니다. 메신저·메일·문서에 붙여넣거나 다른 사람과 공유하지 않습니다.
+</li>
+<li>키를 잃어버리면 Console에서 다시 볼 수 없습니다. 새 키를 만들고 예전 키는 삭제합니다.
+</li>
+<li><strong>Create key</strong> 버튼이 비활성이면 조직 역할에 키 만들기 권한이 없는 것이므로 담당자에게 요청합니다.
+</li></ul>
+<p>출처: <a href="https://platform.claude.com/docs/en/get-api-key">Get your Claude API key</a> (Claude 공식 문서, 2026-10-02 확인)</p>
+<h2>4. 처음 설정</h2>
+<p>API 키를 넣고 그룹웨어 목록을 한 번 불러오면 끝입니다.</p>
+<ol>
+<li>크롬에서 UTHub에 로그인하고 <strong>전자결재 → 신규 요청 → 지급품의(개인) 또는 지급품의(법인)</strong> 화면을 엽니다.
+</li>
+<li>툴바의 확장 아이콘을 누르면 오른쪽에 사이드패널이 열립니다.
+</li>
+<li><strong>⚙ 설정</strong>에서 3장에서 발급한 <strong>Claude API 키</strong>(<code>sk-ant-</code>로 시작)를 붙여넣고 먼저 저장을 누릅니다.
+</li>
+<li><strong>그룹웨어에서 불러오기</strong>를 누릅니다. "프로젝트 N개 · 유형 N개"가 표시되면 성공입니다(지급품의 탭을 보고 있는 상태에서 누릅니다).
+</li>
+<li>프로젝트 별칭이나 힌트를 바꿨다면 <strong>저장</strong>을 한 번 더 누릅니다.
+</li></ol>
+<figure><img src="img/1.webp" alt="시작 화면 — ① 지급품의 화면 열기, ② 사이드패널, ③ ⚙ 설정, ④ 영수증 넣기, ⑤ 분석 모델·분석" loading="lazy"><figcaption>시작 화면 — ① 지급품의 화면 열기, ② 사이드패널, ③ ⚙ 설정, ④ 영수증 넣기, ⑤ 분석 모델·분석</figcaption></figure>
+<p>키를 바꾸려면 새 키를 입력하고 <strong>저장</strong>, 지우려면 <strong>키 초기화</strong>, 제대로 동작하는지 보려면 <strong>키 확인</strong>을 누릅니다(비용 없음). 저장된 키는 끝 4자리만 표시됩니다.</p>
+<table><thead><tr><th>설정 항목</th><th>설명</th></tr></thead><tbody><tr><td>모델</td><td>기본 Claude Opus 5.5(정확도 우선). Fable 5.1은 최고 성능·가장 비쌈, Sonnet 5.5는 절반 가격, Haiku 4.5는 최저가. 메인 화면의 '분석 모델'에서도 바꿀 수 있습니다</td></tr><tr><td>프로젝트 목록</td><td>그룹웨어에서 자동으로 채워집니다. 줄 끝에 세로막대(|)와 별칭을 붙이면(예: …기능개선|울산자율주행,울산) 파일 이름 자동 선택에 쓰입니다</td></tr><tr><td>분류 힌트</td><td>자주 틀리는 분류를 적어 두면 Claude가 우선 적용합니다. 예: "스타벅스는 복리후생비"</td></tr></tbody></table>
+<p>프로젝트·유형 목록은 UTHub 탭을 보고 있는 상태에서 사이드패널을 열 때, 마지막으로 불러온 지 12시간이 지났으면 자동으로 다시 불러옵니다. 새 프로젝트가 바로 안 보이면 <strong>그룹웨어에서 불러오기</strong>를 다시 누릅니다.</p>
+<p>설정의 <strong>Claude 프로젝트 추천 사용</strong>을 켜면 분석 때 프로젝트도 추천받습니다(기본 켜짐). 추천 후보는 그룹웨어 지출 화면에서 고를 수 있는 '내 프로젝트'입니다. <strong>프로젝트 힌트</strong>에 "김천·동김천 → 26-PRJ-0007", "울산 → 26-PRJ-0006"처럼 지역과 프로젝트를 적어 두면 추천이 정확해집니다.</p>
+<h3>결재선 미리 등록</h3>
+<p>결재선은 잘 바뀌지 않으므로 설정에 한 번 저장해 두고 계속 씁니다. ⚙ 설정의 <strong>결재선</strong> 칸에 이름을 쉼표(또는 띄어쓰기)로 구분해 적은 순서대로 입력하고 <strong>저장</strong>을 누릅니다.</p>
+<table><thead><tr><th>칸</th><th>입력 예</th></tr></thead><tbody><tr><td>합의자</td><td>없으면 비워 둠</td></tr><tr><td>승인자</td><td>홍길동, 김철수, 이영희</td></tr><tr><td>수신자</td><td>박민수, 최지은</td></tr></tbody></table>
+<ul>
+<li><strong>그룹웨어에 입력</strong>을 누르면 영수증 행과 함께 결재선도 들어갑니다. 결재선만 넣으려면 설정의 <strong>결재선만 지금 화면에 넣기</strong>를 누릅니다.
+</li>
+<li>같은 이름이 여럿이면 <code>김철수(B팀)</code>처럼 괄호에 부서를 적습니다. 찾지 못한 이름이나 동명이인은 건너뛰고 알림에 표시합니다.
+</li>
+<li>화면에 이미 있는 사람은 중복 없이 설정 순서대로 정리되고, 설정에 없는 사람은 지우지 않고 뒤에 남깁니다.
+</li>
+<li>자동 지정을 원하지 않으면 <strong>그룹웨어에 입력할 때 결재선도 자동 지정</strong> 체크를 끕니다. 저장한 결재선은 확장을 지웠다가 다시 설치하면 사라집니다.
+</li></ul>
+<h2>5. 사용 순서</h2>
+<p>영수증 1장이 지출 1건이 되고, 사용자는 프로젝트만 확인하면 됩니다.</p>
+<p>사이드패널 위쪽 메뉴에서 기능을 고릅니다. <strong>카드영수증</strong>은 지급품의(개인 D005·법인 D015)용이고, <strong>실행예산 품의(D016)</strong>는 엑셀 업로드로 필드를 채우는 기능으로 현재 <code>기능구현중</code>입니다. 그룹웨어에서 해당 화면을 열면 맞는 메뉴로 자동 전환됩니다.</p>
+<p>사이드패널 오른쪽 위 <strong>📖 매뉴얼</strong> 버튼을 누르면 이 매뉴얼이 새 탭으로 열립니다. 프로그램에 포함돼 있어 업데이트하면 매뉴얼도 최신으로 바뀝니다(화면 캡처의 이름·금액 등은 가려져 있음).</p>
+<ol>
+<li>UTHub <strong>지급품의(개인) 또는 지급품의(법인) 신규 요청</strong> 화면을 열고 사이드패널을 엽니다.
+</li>
+<li>영수증 이미지를 사이드패널에 끌어다 놓습니다. 파일 선택과 클립보드 붙여넣기(Ctrl+V)도 됩니다.
+</li>
+<li>프로젝트를 확인합니다.
+<ul>
+<li>영수증 파일 이름을 <code>프로젝트번호_프로젝트이름_설명</code> 형식으로 저장하면 프로젝트가 자동으로 선택됩니다. 예: <code>26-PRJ-0045_○○시스템 구축_영수증1.png</code> → 26-PRJ-0045. 연도는 <code>26</code>/<code>2026</code>, 번호는 <code>0045</code>/<code>45</code> 모두 인식합니다. 번호 없이 이름만 비슷해도 고르지만 "비슷한 프로젝트 — 확인 필요"로 표시되고, 번호와 이름이 다른 프로젝트를 가리키면 이름 쪽을 고른 뒤 확인을 요청합니다.
+</li>
+<li>"비슷한 프로젝트 — 확인 필요"로 표시된 건은 맞는지 한 번 봅니다.
+</li>
+<li>파일 이름으로 정해지지 않은 영수증은 분석 때 Claude가 장소 단서(가맹점 주소, 하이패스 구간, 열차 도착역)로 프로젝트를 추천합니다. "Claude 추천 72% — 확인 필요"로 표시되며, 글자에 마우스를 올리면 근거가 보입니다. 사무실 근처 식당처럼 장소로 구분되지 않는 영수증은 비워 둡니다.
+</li>
+<li>여러 장을 한 번에 지정하려면 <strong>프로젝트 일괄 지정</strong>을 씁니다. 영수증 왼쪽 체크박스로 고른 뒤 프로젝트를 선택하고 체크한 영수증에 적용을 누릅니다. 프로젝트가 여러 개면 울산 건 체크 → 적용, 김천 건 체크 → 적용처럼 반복합니다. 빈 칸에만 적용은 프로젝트가 없는 영수증에만 넣습니다. Claude 추천을 쓰려면 일괄 지정은 분석이 끝난 뒤에 합니다(추천은 프로젝트가 빈 영수증에만 들어감).
+</li></ul>
+</li>
+<li><strong>분석</strong>을 누릅니다. 영수증 3장씩 동시에 처리해 지출일·금액·유형 대분류·소분류·내용을 채웁니다. 분석 전 버튼 위 '분석 모델'에서 모델을 고를 수 있고, 영수증별 실제 분석 비용은 결과 아래에, 합계는 상단 요약에 표시됩니다.
+</li>
+<li>결과를 훑어봅니다. 칸 옆 %는 지출일·금액은 글자 인식 확률, 대분류·소분류는 유형 분류 확률입니다. 주황(70% 미만)·빨강(50% 미만)이거나 빨간 테두리에 '미선택'이 붙은 칸은 직접 확인해 고릅니다.
+</li>
+<li><strong>그룹웨어에 입력</strong>을 누릅니다. 화면에 영수증 수만큼 행이 생기고 영수증 이미지도 첨부됩니다. 이미 입력해 둔 행은 그대로 남고, 선택이 안 된 드롭다운은 그룹웨어 화면에 빨간 점선으로 표시됩니다. 프로젝트나 소분류가 빈 영수증이 있으면 입력이 먼저 막히니 채운 뒤 누릅니다.
+</li>
+<li>그룹웨어 화면에서 내용을 확인하고 결재선(합의자·승인자·수신자)이 맞는지 확인한 뒤 <strong>완료</strong>(또는 임시보관)를 직접 누릅니다.
+</li></ol>
+<figure><img src="img/2.webp" alt="분석 결과 — ⑥ 프로젝트 확인, ⑦ 확률·분석 결과, 체크 일괄 지정, 영수증별 비용" loading="lazy"><figcaption>분석 결과 — ⑥ 프로젝트 확인, ⑦ 확률·분석 결과, 체크 일괄 지정, 영수증별 비용</figcaption></figure>
+<figure><img src="img/3.webp" alt="그룹웨어 입력 결과 — ⑧ 그룹웨어에 입력, ⑨ 영수증 수만큼 행 생성(첨부 포함), ⑩ 임시보관/완료는 직접" loading="lazy"><figcaption>그룹웨어 입력 결과 — ⑧ 그룹웨어에 입력, ⑨ 영수증 수만큼 행 생성(첨부 포함), ⑩ 임시보관/완료는 직접</figcaption></figure>
+<p>알아두면 좋은 점:</p>
+<ul>
+<li><strong>그룹웨어에 입력</strong>을 두 번 누르면 같은 지출이 중복으로 들어갑니다. 이미 입력한 영수증은 "그룹웨어 입력함"으로 표시되고, 다시 누르면 아직 입력하지 않은 건만 넣을지 물어봅니다.
+</li>
+<li>"※내 프로젝트 아님"으로 표시된 프로젝트는 그룹웨어 지출 화면에서 선택되지 않을 수 있습니다. 해당 프로젝트에 투입 등록이 되어 있는지 확인하세요.
+</li>
+<li>그룹웨어 첨부는 jpg·png만 받습니다. 다른 이미지는 png로 자동 변환되고, PDF 영수증은 분석만 되고 첨부는 직접 해야 합니다.
+</li>
+<li>가맹점은 확인용 참고값이고 그룹웨어에는 들어가지 않습니다.
+</li>
+<li><strong>JSON 저장</strong>으로 분석 결과를 파일로 받아 둘 수 있습니다.
+</li></ul>
+<h3>개인카드와 법인카드</h3>
+<table><thead><tr><th>열려 있는 화면</th><th>주소</th><th>카드구분</th><th>입력 전 확인</th></tr></thead><tbody><tr><td>지급품의(개인)</td><td><code>/request/registration/D005</code></td><td>개인카드</td><td>법인카드로 읽힌 영수증이 있으면 경고</td></tr><tr><td>지급품의(법인)</td><td><code>/request/registration/D015</code></td><td>법인카드</td><td>개인카드로 읽힌 영수증이 있으면 경고</td></tr></tbody></table>
+<p>두 화면은 사용법이 같고, 카드구분은 그룹웨어가 화면에 따라 정합니다. 개인카드와 법인카드 영수증이 섞여 있으면 각각 따로 넣어 해당 화면에서 입력합니다.</p>
+<p><strong>법인카드 영수증 처리 순서</strong></p>
+<ol>
+<li>UTHub <strong>전자결재 → 신규 요청 → 지급품의(법인)</strong> 화면을 엽니다. 주소가 <code>/request/registration/D015</code>로 끝나면 맞습니다.
+</li>
+<li>사이드패널에 <strong>법인카드 영수증만</strong> 넣고 프로젝트를 확인한 뒤 <strong>분석</strong>을 누릅니다.
+</li>
+<li><strong>그룹웨어에 입력</strong>을 누릅니다. 영수증 중 "개인카드"로 읽힌 건이 있으면 파일 이름과 함께 경고가 뜨니, 개인카드 건은 빼고 다시 넣거나 맞는지 확인한 뒤 계속합니다.
+</li>
+<li>카드구분은 그룹웨어가 법인카드로 자동 지정합니다. 결재선을 확인하고 완료(또는 임시보관)를 누릅니다.
+</li></ol>
+<p>개인카드와 법인카드 영수증이 한꺼번에 있으면, 개인 건을 지급품의(개인)에 먼저 입력한 뒤 <strong>전체 지우기</strong>를 하고 법인 건을 넣어 지급품의(법인)에 입력합니다.</p>
+<h2>6. 문제 해결</h2>
+<p>대부분은 화면 새로고침과 목록 다시 불러오기로 해결됩니다.</p>
+<table><thead><tr><th>증상</th><th>원인</th><th>조치</th></tr></thead><tbody><tr><td>"그룹웨어에 입력" 버튼이 회색</td><td>분석이 끝난 영수증이 없음</td><td>영수증을 넣고 <strong>분석</strong>부터 다시</td></tr><tr><td>"API 키가 올바르지 않습니다 (401)"</td><td>키 오타 또는 폐기된 키</td><td>설정에서 키를 다시 붙여넣기, 안 되면 3장 절차로 새 키 발급</td></tr><tr><td>"요청 한도 초과 (429)"</td><td>단시간에 많은 요청 또는 월 한도 도달</td><td>잠시 후 분석 다시. 계속되면 배포 담당자에게 문의</td></tr><tr><td>"지출 유형을 그룹웨어에서 불러오지 않음"</td><td>대분류·소분류 목록이 없음</td><td>UTHub 탭을 열고 ⚙ 설정 → <strong>그룹웨어에서 불러오기</strong> 후, 대분류·소분류를 직접 고르거나 ✕로 지우고 다시 넣어 분석</td></tr><tr><td>"UTHub 탭을 연 상태에서 눌러주세요"</td><td>현재 보고 있는 탭이 UTHub가 아님</td><td>지급품의 화면 탭을 누른 뒤 다시 시도</td></tr><tr><td>"화면 state를 찾지 못했습니다"</td><td>지급품의(개인·법인) 화면이 아니거나 그룹웨어 화면이 바뀜</td><td>화면 F5 후 다시. 계속되면 GitHub Issues에 메시지 캡처와 함께 등록</td></tr><tr><td>프로젝트가 목록에 없음</td><td>목록을 불러온 뒤 새로 생긴 프로젝트</td><td><strong>그룹웨어에서 불러오기</strong> 다시</td></tr><tr><td>확장 프로그램이 목록에서 사라짐</td><td>설치한 폴더를 지웠거나 옮김</td><td>2장 설치(install.ps1)를 다시. API 키도 다시 입력</td></tr></tbody></table>
+<p>지금 쓰는 버전은 사이드패널 제목 옆(예: v0.4.0)에 표시됩니다. 새 버전이 반영되지 않으면 <code>%LOCALAPPDATA%\UTGwReceipt\update.log</code>의 마지막 줄을 확인합니다. "최신 상태"나 "업데이트 완료"면 정상이고, "오류"면 그 내용을 GitHub Issues에 등록합니다.</p>
+<p>해결되지 않으면 사이드패널에서 우클릭 → <strong>검사</strong> → Console 탭을 캡처해 GitHub Issues에 등록합니다.</p>
+<h2>7. 보안·비용 유의사항</h2>
+<p>영수증 이미지는 분석을 위해 Anthropic(Claude) API로 전송되므로, 전사 배포 전에 사내 개인정보·보안 담당자의 확인을 받는 것을 권장합니다.</p>
+<table><thead><tr><th>항목</th><th>내용</th></tr></thead><tbody><tr><td>외부로 나가는 것</td><td>영수증 이미지(카드번호 일부·가맹점·금액 포함), 지출 유형 목록, 분류 힌트. 'Claude 프로젝트 추천 사용'이 켜져 있으면(기본) 내 프로젝트 목록(ID·이름·별칭)과 프로젝트 힌트도 전송</td></tr><tr><td>외부로 나가지 않는 것</td><td>전체 프로젝트 목록, 그룹웨어 로그인 정보, 승인자·수신자 정보 (추천을 끄면 프로젝트 정보는 전송하지 않음)</td></tr><tr><td>API 키 저장 위치</td><td>각 PC의 크롬 확장 저장소(암호화되지 않음). 공용 PC에는 설치하지 않습니다</td></tr><tr><td>그룹웨어 접근</td><td>사용자가 로그인한 UTHub 탭에서만 동작하며, 최종 요청은 사용자가 직접 누릅니다</td></tr><tr><td>비용</td><td>사이드패널에 영수증별 실제 비용($)과 합계가 표시됩니다. 대략 Opus 5.5 기준 영수증 1장당 $0.01~0.03, Haiku 4.5는 그 수 분의 1, Fable 5.1은 약 2.5배</td></tr></tbody></table>
+<p>비용은 Anthropic Console의 사용량 화면에서 키별로 확인할 수 있고, 월 한도를 걸어 두면 초과 사용을 막을 수 있습니다.</p>
+<p><strong>설치·업데이트가 PC에 만드는 것</strong>: 설치 폴더 <code>%LOCALAPPDATA%\UTGwReceipt</code>, 작업 스케줄러 <code>UTGwReceipt-AutoUpdate</code>(1시간마다·로그인 시), 현재 사용자 레지스트리 <code>HKCU\Software\Classes\utgwr-update</code>('지금 업데이트' 버튼용). 확장 프로그램은 새 버전 확인을 위해 GitHub API에 접속합니다. 자동 업데이트는 GitHub Release의 파일을 서명 확인 없이 실행하므로, 배포 담당자는 GitHub 계정에 2단계 인증을 켜 두어야 합니다.</p></main></body></html>

@@ -81,3 +81,6 @@ fieldset.approval legend { font-weight: 600; padding: 0 4px; }
 .wip { display: inline-block; font-size: 10px; font-weight: 600; color: #b45309; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 0 6px; margin-left: 3px; vertical-align: 1px; }
 .wipBox { border: 1px dashed var(--line); border-radius: 8px; padding: 10px; background: var(--card); }
 .drop.disabled { border: 2px dashed var(--line); border-radius: 8px; padding: 14px; text-align: center; opacity: .6; margin-top: 8px; }
+
+.headBtns { gap: 4px; margin: 0; flex-shrink: 0; }
+.headBtns button { white-space: nowrap; }
