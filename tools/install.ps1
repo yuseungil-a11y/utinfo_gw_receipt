@@ -25,8 +25,15 @@ try {
         robocopy $bundledExt $ExtDir /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
         if ($LASTEXITCODE -ge 8) { throw "파일 복사 실패 (robocopy $LASTEXITCODE)" }
         Copy-Item $bundledUpdate $UpdateScript -Force
+        # 제거 스크립트도 설치 폴더에 둔다 (내려받은 압축 폴더를 지워도 제거 가능)
+        $bundledUninstall = Join-Path $Here "uninstall.ps1"
+        if (Test-Path $bundledUninstall) { Copy-Item $bundledUninstall (Join-Path $InstallRoot "uninstall.ps1") -Force }
         $m = [IO.File]::ReadAllText((Join-Path $ExtDir "manifest.json"), [Text.Encoding]::UTF8) | ConvertFrom-Json
         Write-Host "설치 파일에서 v$($m.version) 설치"
+        # 게시판 파일이 예전 버전일 수 있으므로 설치 직후 GitHub 최신 버전을 한 번 확인 (실패해도 설치는 계속)
+        Write-Host "최신 버전 확인 중..."
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $UpdateScript
+        if ($LASTEXITCODE -ne 0) { Write-Host "최신 버전 확인 실패 - 1시간 안에 자동으로 다시 확인합니다." }
     } else {
         # 스크립트만 받은 경우: GitHub 최신 Release에서 설치
         $headers = @{ "User-Agent" = "UTGwReceipt-Installer"; "Accept" = "application/vnd.github+json" }
@@ -37,6 +44,14 @@ try {
         & powershell -NoProfile -ExecutionPolicy Bypass -File $UpdateScript
         if ($LASTEXITCODE -ne 0) { throw "설치 실패 - $InstallRoot\update.log 를 확인하세요." }
     }
+
+    # 확장 프로그램 "지금 업데이트" 버튼용 URL 프로토콜(utgwr-update://) 등록 — 현재 사용자, 관리자 권한 불필요
+    $proto = "HKCU:\Software\Classes\utgwr-update"
+    New-Item -Path "$proto\shell\open\command" -Force | Out-Null
+    Set-ItemProperty -Path $proto -Name "(default)" -Value "URL:UTGwReceipt Update"
+    Set-ItemProperty -Path $proto -Name "URL Protocol" -Value ""
+    Set-ItemProperty -Path "$proto\shell\open\command" -Name "(default)" `
+        -Value "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$UpdateScript`""
 
     # 자동 업데이트 작업 등록 (현재 사용자, 창 없이 실행) — 업데이트는 GitHub Release에서 받음
     $action = New-ScheduledTaskAction -Execute "powershell.exe" `

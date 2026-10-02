@@ -13,6 +13,9 @@
 
   <div id="updateBanner" hidden></div>
 
+  <!-- 기능 메뉴: sidepanel.js의 FEATURES 목록으로 그린다. 새 기능은 FEATURES에 항목 + 아래 tab-<id> 섹션 추가 -->
+  <nav id="tabs" class="tabs" role="tablist"></nav>
+
   <section id="settings" hidden>
     <label>Claude API 키
       <span id="keyStatus" class="keyStatus"></span>
@@ -31,7 +34,7 @@
         <button id="btnLoadMeta" class="ghost">그룹웨어에서 불러오기</button>
         <small id="metaStatus"></small>
       </div>
-      <small>UTHub 탭이 열려 있을 때 지출 유형(대분류·소분류)과 전체 프로젝트(프로젝트 관리 화면 기준)를 불러옵니다.</small>
+      <small>UTHub 탭을 보고 있는 상태에서 누르면 지출 유형(대분류·소분류)과 전체 프로젝트(프로젝트 관리 화면 기준)를 불러옵니다. 그 상태로 사이드패널을 열면 12시간마다 자동으로 다시 불러옵니다.</small>
     </div>
     <label>프로젝트 목록 <small>(한 줄에 "ID|이름|별칭1,별칭2" — 별칭은 직접 추가. 파일 이름이 ID·이름·별칭과 비슷하면 자동 선택)</small>
       <textarea id="projects" rows="7"></textarea>
@@ -39,10 +42,21 @@
     <label>분류 힌트 <small>(예: "스타벅스는 복리후생비", "주유소는 여비교통비(개인차량)")</small>
       <textarea id="hints" rows="3"></textarea>
     </label>
-    <label class="check"><input id="recommendProject" type="checkbox"> Claude 프로젝트 추천 사용 <small>(파일 이름으로 정해지지 않은 영수증에 장소 단서로 추천)</small></label>
+    <label class="check"><input id="recommendProject" type="checkbox"> Claude 프로젝트 추천 사용 <small>(분석할 때 장소 단서로 추천 — 파일 이름이나 직접 고른 프로젝트는 바꾸지 않음. 켜 두면 내 프로젝트 목록·프로젝트 힌트가 Claude로 전송됨)</small></label>
     <label>프로젝트 힌트 <small>(지역·업체와 프로젝트 연결. 예: "김천·동김천 → 26-PRJ-0007", "울산 → 26-PRJ-0006")</small>
       <textarea id="projectHints" rows="3"></textarea>
     </label>
+    <fieldset class="approval">
+      <legend>결재선 <small>(이름을 쉼표나 띄어쓰기로 구분, 적은 순서대로 지정. 한 번 저장하면 계속 사용. 같은 이름이 여럿이면 "홍길동(부서)")</small></legend>
+      <label>합의자 <input id="lineConsensual" type="text" placeholder="없으면 비워 두기"></label>
+      <label>승인자 <input id="lineApprover" type="text" placeholder="예: 김현수, 김영희, 신동헌, 길기순"></label>
+      <label>수신자 <input id="lineReceiver" type="text" placeholder="예: 김영희, 김미정, 임혜리"></label>
+      <label class="check"><input id="autoApproval" type="checkbox"> 그룹웨어에 입력할 때 결재선도 자동 지정</label>
+      <div class="row">
+        <button id="btnLine" class="ghost">결재선만 지금 화면에 넣기</button>
+        <small>설정 순서대로 정리, 이미 있는 사람은 중복 없이 유지</small>
+      </div>
+    </fieldset>
     <div class="row">
       <button id="btnSave">저장</button>
       <span id="saveMsg" class="muted"></span>
@@ -60,6 +74,7 @@
     </details>
   </section>
 
+  <div id="tab-receipt" class="tabpane">
   <section id="drop">
     <p><strong>영수증 이미지/PDF를 여기에 끌어다 놓으세요</strong> <span class="muted">(1장 = 지출 1건)</span></p>
     <p class="muted">또는 <label class="link">파일 선택<input id="fileInput" type="file" accept="image/*,application/pdf" multiple hidden></label> · 클립보드 붙여넣기(Ctrl+V)</p>
@@ -90,6 +105,17 @@
   <p id="summary" class="muted"></p>
 
   <ul id="list"></ul>
+  </div>
+
+  <div id="tab-budget" class="tabpane" hidden>
+    <div class="wipBox">
+      <p><strong>실행예산 품의</strong> <span class="wip">기능구현중</span></p>
+      <p class="muted">그룹웨어 <b>실행예산 품의(D016)</b> 신규 요청 화면에 엑셀 파일을 올리면 필드 내용을 자동으로 채우는 기능입니다. 현재 개발 중이며, 완성되면 업데이트로 자동 제공됩니다.</p>
+      <section class="drop disabled" aria-disabled="true">
+        <p><strong>실행예산 엑셀 파일(.xlsx)</strong> <span class="muted">— 준비 중</span></p>
+      </section>
+    </div>
+  </div>
 
   <template id="tplItem">
     <li class="item">

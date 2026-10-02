@@ -1,5 +1,5 @@
 import { analyzeReceipt } from "./lib/claude.js";
-import { loadSettings } from "./lib/config.js";
+import { loadSettings, RELEASES_API } from "./lib/config.js";
 
 // 툴바 아이콘 클릭 시 사이드패널 열기
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(console.error);
@@ -26,8 +26,28 @@ const RELOAD_ALARM = "disk-version-check";
 function ensureAlarm() {
   chrome.alarms.create(RELOAD_ALARM, { delayInMinutes: 1, periodInMinutes: 30 });
 }
-chrome.runtime.onInstalled.addListener(ensureAlarm);
-chrome.runtime.onStartup.addListener(ensureAlarm);
+
+// 크롬 시작·설치 직후 GitHub 최신 버전을 한 번 확인 → 새 버전이 있으면 툴바 아이콘에 "UP" 배지
+// (사이드패널을 열면 상단 배너의 "지금 업데이트" 버튼으로 바로 적용)
+async function checkLatestOnStart() {
+  try {
+    const res = await fetch(RELEASES_API, { headers: { Accept: "application/vnd.github+json" } });
+    if (!res.ok) return;
+    const latest = String((await res.json()).tag_name || "").replace(/^v/, "");
+    const current = chrome.runtime.getManifest().version;
+    const pa = latest.split(".").map(Number), pb = current.split(".").map(Number);
+    let newer = false;
+    for (let i = 0; i < 3; i++) { if ((pa[i] || 0) !== (pb[i] || 0)) { newer = (pa[i] || 0) > (pb[i] || 0); break; } }
+    await chrome.action.setBadgeText({ text: newer ? "UP" : "" });
+    if (newer) {
+      await chrome.action.setBadgeBackgroundColor({ color: "#2563eb" });
+      await chrome.action.setTitle({ title: `카드영수증 도우미 — 새 버전 v${latest} 있음 (열어서 업데이트)` });
+    }
+  } catch { /* 오프라인 등 — 다음 시작 때 다시 */ }
+}
+
+chrome.runtime.onInstalled.addListener(() => { ensureAlarm(); checkLatestOnStart(); });
+chrome.runtime.onStartup.addListener(() => { ensureAlarm(); checkLatestOnStart(); });
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name !== RELOAD_ALARM) return;

@@ -35,9 +35,11 @@ export async function fetchGroupwareMeta() {
 
   // 내 프로젝트 (지출 화면에서 선택 가능한 목록)
   let mine = [];
+  let mineOk = false;
   try {
     const my = await getJson("/api/project/my/list?myProjectAt=Y");
     mine = (Array.isArray(my) ? my : my.result) || [];
+    mineOk = true;
   } catch (e) {
     out.warnings.push(`내 프로젝트 조회 실패: ${e.message}`);
   }
@@ -64,7 +66,8 @@ export async function fetchGroupwareMeta() {
   for (const p of mine) if (!all.has(p.prjId)) all.set(p.prjId, p);
 
   out.projects = [...all.values()]
-    .map((p) => ({ id: p.prjId, name: p.prjNm || p.prjId, mine: mineIds.has(p.prjId), org: p.excOrgNm || "", end: p.prjEndDt || "" }))
+    // mine: 조회 실패 시 undefined (사이드패널이 이전 값을 유지)
+    .map((p) => ({ id: p.prjId, name: p.prjNm || p.prjId, mine: mineOk ? mineIds.has(p.prjId) : undefined, org: p.excOrgNm || "", end: p.prjEndDt || "" }))
     .sort((a, b) => b.id.localeCompare(a.id));
   return out;
 }
@@ -76,8 +79,12 @@ export async function fetchGroupwareMeta() {
  * 화면 컴포넌트의 React state {expensesList, totalExpsPrc}를 직접 갱신하면
  * 하위 RequestExpsList가 data prop 변경을 받아 행을 다시 그린다. 드롭다운을 클릭으로 조작하지 않으므로 안정적이다.
  * rows: [{ date:"YYYY-MM-DD", amount, majorId, minorId, memo, prjId, file:{name,type,dataUrl}|null }]
+ * line: { consensual, approver, receiver } — 쉼표로 구분한 이름. 주면 같은 state의 합의자·승인자·수신자 목록도 채운다.
+ *   화면의 사람 선택 팝업과 같은 방식: GET /api/employee 결과(emplId·emplNm)로
+ *   { appdUserDiv:"P"|"A"|"R", appdEmplId, appdStt:"W", appdEmplInfo:직원 } 항목을 목록에 추가.
+ * rows가 비어 있으면 결재선만 지정한다.
  */
-export async function fillExpenseRows(rows) {
+export async function fillExpenseRows(rows, line) {
  try {
   const fiberOf = (el) => {
     const k = el && Object.keys(el).find((k) => k.startsWith("__reactFiber$"));
@@ -112,7 +119,7 @@ export async function fillExpenseRows(rows) {
     }
   }
   if (!formHook) return { ok: false, message: "화면 state(expensesList)를 찾지 못했습니다. 그룹웨어 화면이 바뀌었을 수 있습니다." };
-  if (!categoryData) return { ok: false, message: "지출 유형 목록(categoryData)을 찾지 못했습니다. 화면을 새로고침 후 다시 시도하세요." };
+  if (rows.length && !categoryData) return { ok: false, message: "지출 유형 목록(categoryData)을 찾지 못했습니다. 화면을 새로고침 후 다시 시도하세요." };
 
   // fetch(data:URL)는 페이지 CSP(connect-src)에 막힐 수 있어 base64를 직접 디코딩
   const toFile = ({ name, type, dataUrl }) => {
@@ -123,6 +130,7 @@ export async function fillExpenseRows(rows) {
   };
 
   const warnings = [];
+  const done = [];
   const newRows = [];
   for (const [i, r] of rows.entries()) {
     const major = categoryData.find((m) => m.id === r.majorId);
@@ -131,7 +139,12 @@ export async function fillExpenseRows(rows) {
     newRows.push({
       mictgNm: major || null,
       expsDiv: minor ? minor.id : null,
-      expsStrtDt: r.date ? new Date(`${r.date}T00:00:00`) : new Date(),
+      expsStrtDt: (() => {
+        const d = r.date ? new Date(`${r.date}T00:00:00`) : null;
+        if (d && !isNaN(d)) return d;
+        warnings.push(`${i + 1}번(${r.memo || "?"}): 지출일을 읽지 못해 오늘 날짜로 넣음`);
+        return new Date();
+      })(),
       expsPrc: Number(r.amount) || 0,
       attchNo: r.file ? toFile(r.file) : null,
       rmrk: (r.memo || "").slice(0, 90),
@@ -147,7 +160,96 @@ export async function fillExpenseRows(rows) {
   const merged = [...kept, ...newRows];
   const total = merged.reduce((s, x) => s + (Number(x.expsPrc) || 0), 0);
 
-  formHook.queue.dispatch((prev) => ({ ...prev, expensesList: merged, totalExpsPrc: new Intl.NumberFormat().format(total) }));
+  if (rows.length) {
+    formHook.queue.dispatch((prev) => ({ ...prev, expensesList: merged, totalExpsPrc: new Intl.NumberFormat().format(total) }));
+    done.push(`지출 ${newRows.length}건을 입력했습니다 (기존 ${kept.length}건 유지, 합계 ${new Intl.NumberFormat().format(total)}원).`);
+  }
+
+  // 결재선: 이름 → 직원 검색(/api/employee, 화면의 사람 선택 팝업과 같은 API) → 설정한 순서대로 목록 구성
+  //  - 설정한 사람은 설정 순서대로 앞에, 설정에 없지만 화면에 이미 있는 사람은 그 뒤에 유지
+  //  - 이름 구분: 쉼표·띄어쓰기·줄바꿈. 동명이인 단서는 괄호로: "홍길동(AI모빌리티본부)"
+  const LINE = [["consensual", "consensualList", "P", "합의자"], ["approver", "approverList", "A", "승인자"], ["receiver", "receiverList", "R", "수신자"]];
+  const splitNames = (s) => (String(s || "").match(/[^\s,，(]+(?:\s*\([^)]*\))?/g) || []).map((x) => x.trim());
+  const wanted = LINE.map(([k, ...rest]) => [splitNames(line?.[k]), ...rest]);
+  if (wanted.some(([names]) => names.length)) {
+    // 결재선은 화면마다 지출 state와 별도 state({approverList, receiverList, consensualList})로 관리되고,
+    // 오른쪽 결재선 패널(RequestApprProcess)이 그 값을 data, setter를 setData prop으로 받는다 → 패널에서 위로 올라가며 찾는다
+    let lineData = null, setLine = null;
+    const panel = document.querySelector("h3.receiptor") || document.querySelector(".approver_none");
+    for (let f = fiberOf(panel), i = 0; f && i < 40; f = f.return, i++) {
+      const p = f.memoizedProps;
+      if (p && p.data && Array.isArray(p.data.approverList) && typeof p.setData === "function") { lineData = p.data; setLine = p.setData; break; }
+    }
+    // 패널을 못 찾으면: 지출 영역에서 위로 올라가며 결재선 state 훅을 직접 찾는다(등록 화면 컴포넌트가 가진 별도 useState)
+    for (let f = fiberOf(anchor), i = 0; !setLine && f && i < 200; f = f.return, i++) {
+      if (typeof f.type !== "function" && typeof f.type?.type !== "function") continue;
+      for (const h of hooksOf(f)) {
+        const s = h.memoizedState;
+        if (s && typeof s === "object" && Array.isArray(s.approverList) && h.queue?.dispatch) { lineData = s; setLine = h.queue.dispatch; break; }
+      }
+    }
+    if (!setLine) {
+      warnings.push("이 화면에서 결재선 영역(합의자·승인자·수신자)을 찾지 못해 결재선은 지정하지 않음");
+    } else {
+      let emps = [];
+      try {
+        const res = await fetch("/api/employee", { credentials: "include", headers: { Accept: "application/json" } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const j = await res.json();
+        emps = (Array.isArray(j) ? j : j.result) || [];
+      } catch (e) {
+        warnings.push(`직원 목록 조회 실패(${e.message}) — 결재선은 직접 지정하세요`);
+      }
+      if (emps.length) {
+        const resolved = []; // [listKey, div, label, [직원...]]
+        for (const [names, listKey, div, label] of wanted) {
+          if (!names.length) continue;
+          const people = [];
+          for (const raw of names) {
+            const m = raw.match(/^([^(]+?)\s*(?:\(([^)]*)\))?$/);
+            const name = (m ? m[1] : raw).trim(), hint = (m && m[2] || "").trim();
+            let found = emps.filter((e) => e.emplNm === name);
+            if (hint) { const sq = (x) => String(x).replace(/\s+/g, ""); found = found.filter((e) => sq(JSON.stringify(e)).includes(sq(hint))); }
+            if (!found.length) { warnings.push(`${label} '${raw}': 직원 목록에서 찾지 못함${hint ? " (괄호 안 단서가 맞는지 확인)" : ""}`); continue; }
+            if (found.length > 1) { warnings.push(`${label} '${raw}': 같은 이름이 ${found.length}명 — 설정에서 "${name}(부서)"처럼 구분해 주세요`); continue; }
+            if (!people.some((p) => p.emplId === found[0].emplId)) people.push(found[0]);
+          }
+          resolved.push([listKey, div, label, people]);
+        }
+        // 화면 최신 상태(prev) 기준으로 재구성 — 사용자가 직접 바꾼 내용을 덮어쓰지 않도록
+        const build = (prev) => {
+          const next = {};
+          for (const [listKey, div, , people] of resolved) {
+            const cur = prev[listKey] || [];
+            const ids = new Set(people.map((p) => p.emplId));
+            const ordered = people.map((p) => cur.find((x) => x.appdEmplId === p.emplId) ||
+              { appdUserDiv: div, appdEmplId: p.emplId ?? null, appdStt: "W", appdEmplInfo: p });
+            next[listKey] = [...ordered, ...cur.filter((x) => !ids.has(x.appdEmplId))];
+          }
+          return next;
+        };
+        const preview = build(lineData);
+        const added = [];
+        for (const [listKey, , label, people] of resolved) {
+          const had = new Set((lineData[listKey] || []).map((x) => x.appdEmplId));
+          const fresh = people.filter((p) => !had.has(p.emplId));
+          fresh.forEach((p) => added.push(`${label} ${p.emplNm}`));
+          if (people.length && !fresh.length && (lineData[listKey] || []).map((x) => x.appdEmplId).join() !== preview[listKey].map((x) => x.appdEmplId).join()) added.push(`${label} 순서 정리`);
+        }
+        if (resolved.some(([, , , people]) => people.length)) {
+          setLine((prev) => ({ ...prev, ...build(prev) }));
+          done.push(added.length ? `결재선을 지정했습니다: ${added.join(", ")}` : "결재선은 설정한 사람이 이미 모두 지정되어 있습니다.");
+        }
+      }
+    }
+  }
+  if (!rows.length) {
+    return {
+      ok: done.length > 0,
+      message: (done.join("\n") || "결재선을 지정하지 못했습니다.") + (warnings.length ? `\n\n확인 필요:\n- ${warnings.join("\n- ")}` : ""),
+    };
+  }
+
   // 화면이 다시 그려지고 프로젝트 콤보박스가 이름을 찾아 표시할 시간을 준 뒤, 선택 안 된 칸을 빨간 점선으로 표시
   await new Promise((r) => setTimeout(r, 900));
   document.querySelectorAll("[data-gwr-unset]").forEach((el) => { el.style.outline = ""; el.style.outlineOffset = ""; el.removeAttribute("data-gwr-unset"); });
@@ -164,9 +266,9 @@ export async function fillExpenseRows(rows) {
   if (unset.length) warnings.push(`선택 안 된 칸 ${unset.length}개(화면에 빨간 점선 표시): ${unset.join(", ")}`);
   return {
     ok: true,
-    message: `지출 ${newRows.length}건을 입력했습니다 (기존 ${kept.length}건 유지, 합계 ${new Intl.NumberFormat().format(total)}원).` +
+    message: done.join("\n") +
       (warnings.length ? `\n\n확인 필요:\n- ${warnings.join("\n- ")}` : "") +
-      "\n\n화면에서 내용을 확인하고 승인자·수신자를 지정한 뒤 직접 요청하세요.",
+      "\n\n화면에서 내용과 결재선(합의자·승인자·수신자)을 확인한 뒤 직접 완료(요청)하세요.",
     debug: { formHookFound: !!formHook, listHookFound: !!listHook, categoryCount: categoryData.length },
   };
  } catch (e) {

@@ -32,7 +32,9 @@ export const MODELS = [
   { id: "claude-haiku-4-5", label: "Claude Haiku 4.5 — 최저가", input: 1, output: 5, effort: false, fallbacks: false },
 ];
 
-export const modelInfo = (id) => MODELS.find((m) => m.id === id) || MODELS[1];
+// 응답 모델 ID에 날짜 등이 붙어 와도(예: claude-haiku-4-5-20251001) 앞부분으로 찾는다
+export const modelInfo = (id) =>
+  MODELS.find((m) => m.id === id) || MODELS.find((m) => String(id || "").startsWith(m.id)) || MODELS[1];
 
 /** API 응답 usage로 비용(USD) 계산 */
 export function costUSD(modelId, usage) {
@@ -54,6 +56,9 @@ export const DEFAULT_SETTINGS = {
   hints: "",                    // 지출 유형 분류 힌트
   recommendProject: true,       // 분석 시 Claude가 장소 단서로 프로젝트 추천
   projectHints: "",             // 지역·업체 → 프로젝트 연결 힌트
+  // 결재선: 이름을 쉼표로 구분(순서 = 결재 순서). 동명이인은 "홍길동(부서)"처럼 부서·직급을 덧붙임
+  approvalLine: { consensual: "", approver: "", receiver: "" },
+  autoApproval: true,           // 그룹웨어에 입력할 때 결재선도 함께 지정
 };
 
 const norm = (s) => String(s || "").toLowerCase().replace(/[\s_\-()\[\].·~,]/g, "");
@@ -75,6 +80,20 @@ export function matchProjectFromFileName(fileName, projects) {
   const base = String(fileName || "").replace(/\.[^.]+$/, "");
   const nb = norm(base);
 
+  // 0) 프로젝트 번호: 연도 2자리/4자리, 번호 자릿수 무관 — "2026-PRJ-005", "26-PRJ-0005", "26PRJ5" 모두 26-PRJ-0005
+  const num = base.match(/(?:^|[^0-9])(\d{4}|\d{2})\s*[-_ ]?\s*prj\s*[-_ ]?\s*(\d{1,4})(?!\d)/i);
+  let byNumber = "";
+  if (num) {
+    const want = `${num[1].slice(-2)}-PRJ-${num[2].padStart(4, "0")}`;
+    byNumber = projects.find((p) => p.id.toUpperCase() === want)?.id || "";
+  }
+  if (byNumber) {
+    // 파일 이름에 적힌 프로젝트 이름이 다른 프로젝트를 강하게 가리키면 번호 오기로 보고 이름 쪽을 '확인 필요'로 선택
+    const byName = similarProject(base.replace(num[0], " "), projects);
+    if (byName.id && byName.id !== byNumber && byName.score >= 6) return { id: byName.id, kind: "similar" };
+    return { id: byNumber, kind: "exact" };
+  }
+
   let exact = { id: "", len: 0 };
   for (const p of projects) {
     const prjNo = p.id.match(/prj-?(\d+)/i)?.[1];
@@ -87,8 +106,16 @@ export function matchProjectFromFileName(fileName, projects) {
   }
   if (exact.id) return { id: exact.id, kind: "exact" };
 
-  const words = tokenize(base).filter((w) => w.length >= 2 && !/^\d+$/.test(w) && !/^\d+월$/.test(w) && !FILE_STOPWORDS.has(w));
-  if (!words.length) return { id: "", kind: "" };
+  const sim = similarProject(base, projects);
+  return sim.id ? { id: sim.id, kind: "similar" } : { id: "", kind: "" };
+}
+
+/** 파일 이름 단어와 프로젝트 이름·별칭의 유사도로 가장 비슷한 프로젝트. 1등이 단독이고 2점 이상일 때만 id */
+function similarProject(base, projects) {
+  // 두 글자 이하 영문·숫자(예: "AI", "TF")는 흔해서 오선택을 부르므로 유사 판단에서 제외
+  const words = tokenize(base).filter((w) =>
+    w.length >= 2 && !/^\d+$/.test(w) && !/^\d+월$/.test(w) && !FILE_STOPWORDS.has(w) && !/^[a-z0-9]{1,2}$/.test(w) && w !== "prj");
+  if (!words.length) return { id: "", score: 0 };
 
   // 두 글자 단위(bigram)로 겹치는 수를 센다: "울산자율주행" vs "울산시 자율주행" → 울산·자율·율주·주행 4점
   const bigrams = (w) => { const out = []; for (let i = 0; i + 1 < w.length; i++) out.push(w.slice(i, i + 2)); return out; };
@@ -101,8 +128,8 @@ export function matchProjectFromFileName(fileName, projects) {
   }).sort((a, b) => b.score - a.score);
 
   const [first, second] = scored;
-  if (first && first.score >= 2 && first.score > (second?.score || 0)) return { id: first.id, kind: "similar" };
-  return { id: "", kind: "" };
+  if (first && first.score >= 2 && first.score > (second?.score || 0)) return { id: first.id, score: first.score };
+  return { id: "", score: first?.score || 0 };
 }
 
 export async function loadSettings() {

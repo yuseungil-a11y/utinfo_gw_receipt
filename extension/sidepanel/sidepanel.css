@@ -40,7 +40,8 @@ small, .muted { color: var(--muted); }
 .status.err { color: var(--err); }
 .status.ok { color: var(--ok); }
 .status.warn { color: var(--warn); }
-#updateBanner { border: 1px solid var(--accent); background: #eff6ff; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; }
+#updateBanner { border: 1px solid var(--accent); background: #eff6ff; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; display: grid; gap: 4px; }
+#updateBanner .row { justify-content: space-between; flex-wrap: wrap; }
 #updateBanner[hidden] { display: none; }
 .keyStatus { display: block; margin-top: 2px; font-size: 12px; }
 .keyStatus.set { color: var(--ok); }
@@ -70,3 +71,13 @@ select.unset { border: 2px solid var(--err); background: #fef2f2; }
 .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .grid .wide { grid-column: 1 / -1; }
 .reason { margin-top: 4px; font-size: 12px; }
+fieldset.approval { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin: 8px 0; display: grid; gap: 6px; }
+fieldset.approval legend { font-weight: 600; padding: 0 4px; }
+
+/* 기능 메뉴(탭) */
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin: 4px 0 10px; overflow-x: auto; }
+.tabs button { background: none; border: 0; border-bottom: 2px solid transparent; border-radius: 0; color: var(--muted); padding: 6px 8px; white-space: nowrap; cursor: pointer; font: inherit; }
+.tabs button.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.wip { display: inline-block; font-size: 10px; font-weight: 600; color: #b45309; background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 0 6px; margin-left: 3px; vertical-align: 1px; }
+.wipBox { border: 1px dashed var(--line); border-radius: 8px; padding: 10px; background: var(--card); }
+.drop.disabled { border: 2px dashed var(--line); border-radius: 8px; padding: 14px; text-align: center; opacity: .6; margin-top: 8px; }

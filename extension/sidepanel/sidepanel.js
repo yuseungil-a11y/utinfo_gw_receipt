@@ -27,13 +27,22 @@ function renderSettings() {
   $("#model").value = settings.model;
   $("#quickModel").innerHTML = modelOptions;
   $("#quickModel").value = settings.model;
-  $("#projects").value = settings.projects
-    .map((p) => [p.id, p.name, (p.aliases || []).join(",")].join("|").replace(/\|$/, ""))
-    .join("\n");
+  renderProjectsField();
   $("#hints").value = settings.hints;
   $("#projectHints").value = settings.projectHints || "";
   $("#recommendProject").checked = settings.recommendProject !== false;
+  const line = settings.approvalLine || {};
+  $("#lineConsensual").value = line.consensual || "";
+  $("#lineApprover").value = line.approver || "";
+  $("#lineReceiver").value = line.receiver || "";
+  $("#autoApproval").checked = settings.autoApproval !== false;
   renderMetaStatus();
+}
+
+function renderProjectsField() {
+  $("#projects").value = settings.projects
+    .map((p) => [p.id, p.name, (p.aliases || []).join(",")].join("|").replace(/\|$/, ""))
+    .join("\n");
 }
 
 function renderMetaStatus(extra = "") {
@@ -123,6 +132,8 @@ $("#btnSave").onclick = async () => {
     hints: $("#hints").value.trim(),
     projectHints: $("#projectHints").value.trim(),
     recommendProject: $("#recommendProject").checked,
+    approvalLine: readApprovalLine(),
+    autoApproval: $("#autoApproval").checked,
   };
   await saveSettings(settings);
   $("#quickModel").value = settings.model;
@@ -135,9 +146,49 @@ $("#btnSave").onclick = async () => {
 };
 
 // ---------- 그룹웨어 연동 ----------
+// ---------- 기능 메뉴(탭) ----------
+// 새 기능 추가: 여기에 항목을 넣고 sidepanel.html에 <div id="tab-<id>" class="tabpane"> 섹션을 만든다.
+// docIds: 이 기능이 동작하는 그룹웨어 화면(/request/registration/<docId>) — 그 화면을 열면 해당 탭을 자동 선택
+const FEATURES = [
+  { id: "receipt", label: "카드영수증", docIds: ["D005", "D015"], status: "ready" },
+  { id: "budget", label: "실행예산 품의", docIds: ["D016"], status: "wip" },
+];
+let activeFeature = "receipt";
+
+function showFeature(id) {
+  if (!FEATURES.some((f) => f.id === id)) id = FEATURES[0].id;
+  activeFeature = id;
+  for (const f of FEATURES) {
+    const pane = $(`#tab-${f.id}`); // 영역을 빠뜨린 기능이 있어도 패널 전체가 멈추지 않도록
+    if (pane) pane.hidden = f.id !== id;
+    const btn = $(`#tabs [data-tab="${f.id}"]`);
+    btn?.classList.toggle("on", f.id === id);
+    btn?.setAttribute("aria-selected", String(f.id === id));
+  }
+  try { localStorage.setItem("gwr.tab", id); } catch { /* 저장 불가해도 무시 */ }
+}
+
+function renderTabs() {
+  $("#tabs").innerHTML = FEATURES.map((f) =>
+    `<button type="button" role="tab" data-tab="${f.id}" title="${f.docIds.join("·")} 화면">${escapeHtml(f.label)}` +
+    (f.status === "wip" ? ` <span class="wip">기능구현중</span>` : "") + `</button>`).join("");
+  $("#tabs").onclick = (e) => { const b = e.target.closest("[data-tab]"); if (b) showFeature(b.dataset.tab); };
+  let saved = null;
+  try { saved = localStorage.getItem("gwr.tab"); } catch { /* 무시 */ }
+  showFeature(saved || "receipt");
+  // 지금 열린 그룹웨어 화면에 맞는 기능 탭으로 자동 전환
+  chrome.tabs.query({ active: true, currentWindow: true }).then(([tab]) => {
+    const docId = (tab?.url || "").match(/\/request\/registration\/(D\d{3})\b/)?.[1];
+    const f = docId && FEATURES.find((x) => x.docIds.includes(docId));
+    if (f) showFeature(f.id);
+  }).catch(() => {});
+}
+
 async function groupwareTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.url?.includes("uthub.utinfo.co.kr")) {
+  let host = "";
+  try { host = new URL(tab?.url || "").hostname; } catch { /* chrome:// 등 */ }
+  if (host !== "uthub.utinfo.co.kr") {
     throw new Error("UTHub(uthub.utinfo.co.kr) 탭을 연 상태에서 눌러주세요.");
   }
   return tab;
@@ -156,16 +207,26 @@ async function loadMeta({ silent = false } = {}) {
     const prev = new Map(settings.projects.map((p) => [p.id, p]));
     const patch = { metaLoadedAt: new Date().toISOString() };
     if (meta.projects.length) {
-      // 그룹웨어 목록으로 교체하되, 사용자가 넣은 별칭은 유지
-      patch.projects = meta.projects.map((p) => ({ ...p, aliases: prev.get(p.id)?.aliases || [] }));
+      // 그룹웨어 목록으로 교체하되, 사용자가 넣은 별칭은 유지.
+      // '내 프로젝트' 조회가 실패해 mine이 정해지지 않았으면 이전 값을 유지 (전부 '내 프로젝트 아님'이 되는 것 방지)
+      patch.projects = meta.projects.map((p) => ({
+        ...p,
+        mine: p.mine ?? prev.get(p.id)?.mine,
+        aliases: prev.get(p.id)?.aliases || [],
+      }));
     }
     if (meta.categories.length) patch.categories = meta.categories;
     settings = { ...settings, ...patch };
     await saveSettings(patch);
-    renderSettings();
+    // 목록 관련 칸만 다시 그림 — 저장 전인 API 키·힌트 입력값은 건드리지 않음
+    renderProjectsField();
+    renderMetaStatus();
     items.forEach(rematchProject);
     render();
-    if (meta.warnings.length && !silent) alert(meta.warnings.join("\n"));
+    if (meta.warnings.length) {
+      if (silent) renderMetaStatus(`⚠ 일부 목록을 불러오지 못함: ${meta.warnings.join(" / ")}`);
+      else alert(meta.warnings.join("\n"));
+    }
   } catch (e) {
     renderMetaStatus();
     if (!silent) alert(e.message);
@@ -230,6 +291,7 @@ drop.addEventListener("dragleave", () => drop.classList.remove("over"));
 drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); addFiles(e.dataTransfer.files); });
 $("#fileInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
 document.addEventListener("paste", (e) => {
+  if (activeFeature !== "receipt") return; // 다른 기능 탭에서는 영수증으로 받지 않음
   const files = [...e.clipboardData.items].filter((i) => i.kind === "file").map((i) => i.getAsFile());
   if (files.length) addFiles(files);
 });
@@ -268,6 +330,8 @@ $("#pickAll").onchange = () => {
 
 // 파일 이름 자동 선택을 다시 계산. 사용자가 직접 고른 것과 Claude 추천은 그대로 둔다.
 function rematchProject(it) {
+  // 다시 불러온 목록에서 사라진 프로젝트는 비움(화면엔 미선택인데 값만 남는 것 방지)
+  if (it.project_id && !settings.projects.some((p) => p.id === it.project_id)) { it.project_id = ""; it.projectAuto = ""; }
   if (it.projectAuto === "claude") return;
   if (it.projectAuto || !it.project_id) applyAutoProject(it);
 }
@@ -368,7 +432,7 @@ $("#btnFill").onclick = async () => {
   const problems = [];
   const noProj = ready.filter((it) => !it.project_id).length;
   if (noProj) problems.push(`프로젝트 미선택 ${noProj}건`);
-  if (!settings.categories.length) problems.push("지출 유형을 그룹웨어에서 불러오지 않음 (설정 → 그룹웨어에서 불러오기 후 다시 분석)");
+  if (!settings.categories.length) problems.push("지출 유형을 그룹웨어에서 불러오지 않음 (설정 → 그룹웨어에서 불러오기 후, 각 영수증의 대분류·소분류를 직접 고르거나 ✕로 지우고 다시 넣어 분석)");
   const noMinor = ready.filter((it) => !it.data.minorId).length;
   if (settings.categories.length && noMinor) problems.push(`소분류 미선택 ${noMinor}건`);
   if (problems.length) { alert(`입력 전에 확인하세요:\n- ${problems.join("\n- ")}`); return; }
@@ -391,9 +455,23 @@ $("#btnFill").onclick = async () => {
   const notMine = ready.filter((it) => settings.projects.find((p) => p.id === it.project_id)?.mine === false);
   if (notMine.length && !confirm(`${notMine.length}건은 '내 프로젝트'가 아니어서 그룹웨어 지출 화면에서 선택되지 않을 수 있습니다. 계속할까요?`)) return;
 
+  // 이미 그룹웨어에 입력한 영수증을 다시 넣으면 같은 지출이 중복으로 생김
+  const already = ready.filter((it) => it.filled);
+  let targets = ready;
+  if (already.length) {
+    const fresh = ready.filter((it) => !it.filled);
+    if (fresh.length && confirm(`${already.length}건은 이미 그룹웨어에 입력했습니다.\n\n[확인] 아직 입력하지 않은 ${fresh.length}건만 입력\n[취소] 이번 입력 취소`)) {
+      targets = fresh;
+    } else if (!fresh.length && confirm(`모든 영수증(${already.length}건)을 이미 입력했습니다. 다시 입력하면 같은 지출이 중복으로 생깁니다.\n그래도 다시 입력할까요?`)) {
+      targets = ready;
+    } else {
+      return;
+    }
+  }
+
   try {
     const rows = [];
-    for (const it of ready) {
+    for (const it of targets) {
       rows.push({
         date: it.data.date,
         amount: it.data.amount,
@@ -404,12 +482,43 @@ $("#btnFill").onclick = async () => {
         file: await toGroupwareAttachment(it),
       });
     }
-    const res = await runInPage(fillExpenseRows, [rows]);
+    // 설정 입력칸에서 고치고 저장을 안 눌렀어도 화면에 보이는 결재선으로 넣고, 그 값을 저장
+    const line = readApprovalLine();
+    const autoApproval = $("#autoApproval").checked;
+    if (JSON.stringify(line) !== JSON.stringify(settings.approvalLine) || autoApproval !== (settings.autoApproval !== false)) {
+      settings = { ...settings, approvalLine: line, autoApproval };
+      await saveSettings({ approvalLine: line, autoApproval });
+    }
+    const res = await runInPage(fillExpenseRows, [rows, $("#autoApproval").checked ? line : null]);
     console.log("fillExpenseRows", res);
+    if (res?.ok) { targets.forEach((it) => { it.filled = true; }); render(); }
     alert(res?.message || "그룹웨어 화면에서 응답이 없습니다. 화면을 새로고침한 뒤 다시 시도하세요.");
   } catch (e) {
     console.error(e);
     alert(`입력 실패: ${e.message}`);
+  }
+};
+
+// 결재선 입력칸 → { consensual, approver, receiver } (쉼표 뒤 공백 정리)
+function readApprovalLine() {
+  // 쉼표·띄어쓰기·줄바꿈으로 구분, "홍길동(부서)"의 괄호 단서는 한 덩어리로 유지
+  const clean = (s) => (s.match(/[^\s,，(]+(?:\s*\([^)]*\))?/g) || []).map((x) => x.trim()).join(", ");
+  return { consensual: clean($("#lineConsensual").value), approver: clean($("#lineApprover").value), receiver: clean($("#lineReceiver").value) };
+}
+
+$("#btnLine").onclick = async () => {
+  const line = readApprovalLine();
+  if (!line.consensual && !line.approver && !line.receiver) { alert("합의자·승인자·수신자 중 하나 이상 입력하세요."); return; }
+  // 입력칸 값을 바로 저장해 두고 적용
+  settings = { ...settings, approvalLine: line };
+  await saveSettings({ approvalLine: line });
+  try {
+    const tab = await groupwareTab();
+    if (!/\/request\/registration\/(D005|D015)\b/.test(tab.url)) { alert("지급품의(개인 D005 / 법인 D015) 신규 요청 화면에서 눌러주세요."); return; }
+    const res = await runInPage(fillExpenseRows, [[], line]);
+    alert(res?.message || "그룹웨어 화면에서 응답이 없습니다. 화면을 새로고침한 뒤 다시 시도하세요.");
+  } catch (e) {
+    alert(`결재선 지정 실패: ${e.message}`);
   }
 };
 
@@ -442,7 +551,7 @@ function render() {
     else { img.alt = "PDF"; }
     li.querySelector(".fname").textContent = it.name;
     const st = li.querySelector(".status");
-    st.textContent = it.status === "error" ? `오류: ${it.error}` : STATUS_TEXT[it.status];
+    st.textContent = (it.status === "error" ? `오류: ${it.error}` : STATUS_TEXT[it.status]) + (it.filled ? " · 그룹웨어 입력함" : "");
     st.className = "status " + ({ error: "err", done: "ok", empty: "warn" }[it.status] || "");
     li.querySelector(".remove").onclick = () => { items = items.filter((x) => x !== it); render(); };
 
@@ -568,6 +677,25 @@ function updateSummary() {
 
 // ---------- 시작 ----------
 $("#appVersion").textContent = `v${chrome.runtime.getManifest().version}`;
+renderTabs();
+// 그룹웨어에서 다른 요청 화면으로 옮기거나 다른 탭으로 바꾸면 맞는 기능 탭으로 전환(이 창의 활성 탭만)
+const followTab = (tab) => {
+  if (!tab?.active || !tab.url) return;
+  chrome.windows.getCurrent().then((w) => {
+    if (tab.windowId !== w.id) return;
+    const docId = tab.url.match(/\/request\/registration\/(D\d{3})\b/)?.[1];
+    const f = docId && FEATURES.find((x) => x.docIds.includes(docId));
+    if (f) showFeature(f.id);
+  }).catch(() => {});
+};
+chrome.tabs.onUpdated.addListener((_, info, tab) => { if (info.url) followTab(tab); });
+chrome.tabs.onActivated.addListener(({ tabId }) => { chrome.tabs.get(tabId).then(followTab).catch(() => {}); });
+// 드롭 영역 밖에 파일을 놓아도 브라우저가 파일을 열지 않도록
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("drop", (e) => {
+  e.preventDefault();
+  if (activeFeature !== "receipt" && e.dataTransfer?.files?.length) alert("이 기능은 아직 구현 중입니다. 완성되면 업데이트로 제공됩니다.");
+});
 renderSettings();
 if (!settings.apiKey) $("#settings").hidden = false;
 render();
@@ -575,9 +703,24 @@ render();
 if (!settings.metaLoadedAt || Date.now() - new Date(settings.metaLoadedAt).getTime() > META_STALE_MS) {
   loadMeta({ silent: true });
 }
-checkUpdate();
+// ---------- 업데이트 알림 + "지금 업데이트" ----------
+// GitHub Releases에 더 새 버전이 있으면 상단 배너와 업데이트 버튼을 보여준다 (실패하면 조용히 무시).
+const isNewer = (a, b) => {
+  const pa = String(a).split(".").map(Number), pb = String(b).split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
+  }
+  return false;
+};
 
-// GitHub Releases에 더 새 버전이 있으면 배너로 알림 (실패하면 조용히 무시)
+// 설치 폴더(디스크)에 있는 버전 — PC 업데이트 스크립트가 파일을 바꾸면 실행 중인 버전보다 높아진다
+async function diskVersion() {
+  try {
+    const res = await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" });
+    return (await res.json()).version;
+  } catch { return ""; }
+}
+
 async function checkUpdate() {
   try {
     const res = await fetch(RELEASES_API, { headers: { Accept: "application/vnd.github+json" } });
@@ -585,17 +728,54 @@ async function checkUpdate() {
     const rel = await res.json();
     const latest = String(rel.tag_name || "").replace(/^v/, "");
     const current = chrome.runtime.getManifest().version;
-    const newer = (a, b) => {
-      const pa = a.split(".").map(Number), pb = b.split(".").map(Number);
-      for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-        if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
-      }
-      return false;
-    };
-    if (!latest || !newer(latest, current)) return;
-    const banner = $("#updateBanner");
-    banner.innerHTML = `새 버전 <strong>v${escapeHtml(latest)}</strong>이 있습니다 (현재 v${escapeHtml(current)}). ` +
-      `<a href="${escapeHtml(rel.html_url)}" target="_blank" rel="noopener">내려받기·변경 내용</a> — 설치한 폴더에 덮어쓴 뒤 확장 페이지에서 새로고침하세요.`;
-    banner.hidden = false;
-  } catch { /* 오프라인·저장소 비공개 등 */ }
+    if (!latest || !isNewer(latest, current)) return;
+    showUpdateBanner(latest, current, rel.html_url);
+  } catch { /* 오프라인 등 */ }
 }
+
+function showUpdateBanner(latest, current, notesUrl) {
+  const banner = $("#updateBanner");
+  banner.innerHTML =
+    `<div class="row"><span>새 버전 <strong>v${escapeHtml(latest)}</strong>이 있습니다 (현재 v${escapeHtml(current)})</span>` +
+    `<button id="btnUpdateNow">지금 업데이트</button></div>` +
+    `<small id="updateMsg"><a href="${escapeHtml(notesUrl)}" target="_blank" rel="noopener">변경 내용 보기</a></small>`;
+  banner.hidden = false;
+  $("#btnUpdateNow").onclick = () => runUpdate(latest);
+}
+
+// 1) 이미 새 파일이 설치돼 있으면 바로 다시 로드
+// 2) 아니면 PC 업데이트 스크립트를 utgwr-update:// 로 실행 → 새 파일이 생기면 다시 로드
+async function runUpdate(latest) {
+  const msg = $("#updateMsg");
+  const btn = $("#btnUpdateNow");
+  if (!isNewer(latest, await diskVersion()) ) {
+    msg.textContent = "새 버전을 적용합니다…";
+    setTimeout(() => chrome.runtime.reload(), 500);
+    return;
+  }
+  btn.disabled = true;
+  msg.textContent = "업데이트를 받는 중입니다… (크롬이 'PowerShell 열기'를 물으면 허용하세요)";
+  let tab;
+  try { tab = await chrome.tabs.create({ url: "utgwr-update://run", active: true }); } catch { /* 무시 */ }
+  const started = Date.now();
+  // 크롬 확인 창에서 취소했을 수도 있으니 15초 뒤에는 버튼을 다시 누를 수 있게 함
+  setTimeout(() => { btn.disabled = false; }, 15000);
+  const timer = setInterval(async () => {
+    const v = await diskVersion();
+    if (v && !isNewer(latest, v)) {
+      clearInterval(timer);
+      msg.textContent = `v${v} 설치 완료 — 다시 불러옵니다…`;
+      if (tab?.id) chrome.tabs.remove(tab.id).catch(() => {});
+      setTimeout(() => chrome.runtime.reload(), 800);
+    } else if (Date.now() - started > 120000) {
+      clearInterval(timer);
+      btn.disabled = false;
+      if (tab?.id) chrome.tabs.remove(tab.id).catch(() => {});
+      msg.innerHTML = "업데이트를 확인하지 못했습니다. 잠시 후 다시 누르거나, 1시간 안에 자동으로 업데이트됩니다. " +
+        "(계속되면 <code>%LOCALAPPDATA%\\UTGwReceipt\\update.log</code> 확인)";
+    }
+  }, 3000);
+}
+
+// 함수·상수 정의가 모두 끝난 뒤 새 버전 확인 (isNewer 등 const 참조 순서 보장)
+checkUpdate();

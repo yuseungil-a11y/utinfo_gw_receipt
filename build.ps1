@@ -1,7 +1,9 @@
 ﻿# 로컬 빌드: dist\ 에 두 가지 ZIP 생성 (_test 영수증, _sample 등 개인 자료는 제외)
 #  - gw-receipt-helper-v<ver>.zip        : 업데이트용 (확장 프로그램 폴더만)
-#  - gw-receipt-helper-setup-v<ver>.zip  : 게시판 배포용 설치 파일 (확장 + install/update/uninstall 스크립트)
-# 정식 배포는 v* 태그 push → GitHub Actions가 같은 파일을 Release에 올린다.
+#  - 유티허브 영수증 등록 도우미 v<ver>.zip : 게시판 배포용 설치 파일 (확장 + install/update/uninstall 스크립트)
+# 정식 배포는 v* 태그 push → GitHub Actions가 같은 내용을 Release에 올린다
+# (Release의 설치 ZIP 이름은 영문 gw-receipt-helper-setup-v<ver>.zip — GitHub가 한글·공백 파일명을 바꾸기 때문.
+#  게시판에는 이 스크립트가 만든 한글 이름 파일을 올리거나, Release 파일을 받아 이름만 바꿔 올린다).
 # 사용: powershell -ExecutionPolicy Bypass -File build.ps1
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
@@ -25,7 +27,8 @@ Compress-Archive -Path (Join-Path $upd "gw-receipt-helper") -DestinationPath $zi
 $set = Join-Path $stage "setup"
 Copy-Item $ext (Join-Path $set "gw-receipt-helper") -Recurse
 Copy-Item (Join-Path $root "tools\install.ps1"), (Join-Path $root "tools\update.ps1"), (Join-Path $root "tools\uninstall.ps1") $set
-$zip2 = Join-Path $dist "gw-receipt-helper-setup-v$version.zip"
+# 게시판에 올리는 파일은 직원이 알아보기 쉽게 한글 이름 (GitHub Release 첨부는 영문 이름 유지)
+$zip2 = Join-Path $dist "유티허브 영수증 등록 도우미 v$version.zip"
 if (Test-Path $zip2) { [IO.File]::Delete($zip2) }
 Compress-Archive -Path (Join-Path $set "*") -DestinationPath $zip2
 
