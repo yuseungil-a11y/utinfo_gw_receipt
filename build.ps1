@@ -27,6 +27,8 @@ Compress-Archive -Path (Join-Path $upd "gw-receipt-helper") -DestinationPath $zi
 $set = Join-Path $stage "setup"
 Copy-Item $ext (Join-Path $set "gw-receipt-helper") -Recurse
 Copy-Item (Join-Path $root "tools\install.ps1"), (Join-Path $root "tools\update.ps1"), (Join-Path $root "tools\uninstall.ps1") $set
+# 맥용 설치/업데이트/제거 스크립트도 같은 ZIP에 (윈도우·맥 공용 설치 파일)
+Copy-Item (Join-Path $root "tools\install-mac.sh"), (Join-Path $root "tools\update-mac.sh"), (Join-Path $root "tools\uninstall-mac.sh") $set
 # 게시판에 올리는 파일은 직원이 알아보기 쉽게 한글 이름 (GitHub Release 첨부는 영문 이름 유지)
 $zip2 = Join-Path $dist "유티허브 영수증 등록 도우미 v$version.zip"
 if (Test-Path $zip2) { [IO.File]::Delete($zip2) }

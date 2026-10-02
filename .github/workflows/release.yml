@@ -33,20 +33,22 @@ jobs:
           mkdir -p dist/stage
           cp -r extension dist/stage/gw-receipt-helper
           (cd dist/stage && zip -r "../gw-receipt-helper-v$VERSION.zip" gw-receipt-helper)
-          # 2) 게시판 배포용 설치 파일: 확장 프로그램 + 설치/업데이트/제거 스크립트
+          # 2) 게시판 배포용 설치 파일: 확장 프로그램 + 설치/업데이트/제거 스크립트(윈도우 .ps1 · 맥 .sh)
           mkdir -p dist/setup
           cp -r extension dist/setup/gw-receipt-helper
           cp tools/install.ps1 tools/update.ps1 tools/uninstall.ps1 dist/setup/
+          cp tools/install-mac.sh tools/update-mac.sh tools/uninstall-mac.sh dist/setup/
           (cd dist/setup && zip -r "../gw-receipt-helper-setup-v$VERSION.zip" .)
 
       - name: GitHub Release 생성
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # update.ps1 은 PC의 자동 업데이트 스크립트가 스스로를 갱신할 때 받아 간다
+          # update.ps1 / update-mac.sh 는 PC의 자동 업데이트 스크립트가 스스로를 갱신할 때 받아 간다
           gh release create "$GITHUB_REF_NAME" "dist/gw-receipt-helper-v$VERSION.zip" \
             "dist/gw-receipt-helper-setup-v$VERSION.zip" \
             tools/install.ps1 tools/update.ps1 tools/uninstall.ps1 \
+            tools/install-mac.sh tools/update-mac.sh tools/uninstall-mac.sh \
             --title "v$VERSION" --generate-notes
 
       - name: 크롬 웹스토어 업로드·게시 (Secrets 설정 시에만)

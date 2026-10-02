@@ -15,6 +15,8 @@
 
 이후에는 작업 스케줄러(`UTGwReceipt-AutoUpdate`)가 1시간마다 새 Release를 확인해 설치 폴더를 교체하고, 확장 프로그램은 30분 안에 스스로 다시 로드합니다. 제거는 `uninstall.ps1`.
 
+**macOS**: 설치 ZIP을 풀고 터미널에서 `bash install-mac.sh` → `chrome://extensions`에서 `~/Library/Application Support/UTGwReceipt/gw-receipt-helper` 로드(폴더 선택 창에서 Cmd+Shift+G, 경로는 클립보드에 복사됨). 자동 업데이트는 launchd(`kr.co.utinfo.gwreceipt.update`, 1시간마다·로그인 시), "지금 업데이트" 버튼은 설치 시 만드는 `UTGwReceipt Updater.app`(utgwr-update:// 처리)이 맡습니다. 제거는 `uninstall-mac.sh`.
+
 ## 구조
 
 | 경로 | 역할 |
@@ -24,7 +26,8 @@
 | `extension/lib/claude.js` | Claude API 호출 (영수증 → 지출일·금액·유형) |
 | `extension/lib/gw-page.js` | 그룹웨어 탭 안에서 실행: 목록 조회(`/api/common/category`, `/api/project/mng`, `/api/project/my/list`), 지출 행 입력 |
 | `extension/lib/config.js` | 계정과목 기준, 설정 저장, 파일 이름 → 프로젝트 매칭 |
-| `tools/install.ps1` · `update.ps1` · `uninstall.ps1` | PC 설치, 1시간 주기 자동 업데이트, 제거 |
+| `tools/install.ps1` · `update.ps1` · `uninstall.ps1` | 윈도우: 설치, 1시간 주기 자동 업데이트, 제거 |
+| `tools/install-mac.sh` · `update-mac.sh` · `uninstall-mac.sh` | macOS: 같은 역할 (launchd, 업데이트 버튼용 도우미 앱) |
 | `build.ps1` | 로컬에서 배포 ZIP 생성 (`dist/`) |
 | `.github/workflows/release.yml` | `v*` 태그 push → ZIP 빌드 → GitHub Release (+ 선택: 크롬 웹스토어 게시) |
 

@@ -754,7 +754,8 @@ async function runUpdate(latest) {
     return;
   }
   btn.disabled = true;
-  msg.textContent = "업데이트를 받는 중입니다… (크롬이 'PowerShell 열기'를 물으면 허용하세요)";
+  const isMac = /Mac/i.test(navigator.userAgentData?.platform || navigator.platform || "");
+  msg.textContent = `업데이트를 받는 중입니다… (크롬이 '${isMac ? "UTGwReceipt Updater" : "PowerShell"} 열기'를 물으면 허용하세요)`;
   let tab;
   try { tab = await chrome.tabs.create({ url: "utgwr-update://run", active: true }); } catch { /* 무시 */ }
   const started = Date.now();
@@ -772,7 +773,7 @@ async function runUpdate(latest) {
       btn.disabled = false;
       if (tab?.id) chrome.tabs.remove(tab.id).catch(() => {});
       msg.innerHTML = "업데이트를 확인하지 못했습니다. 잠시 후 다시 누르거나, 1시간 안에 자동으로 업데이트됩니다. " +
-        "(계속되면 <code>%LOCALAPPDATA%\\UTGwReceipt\\update.log</code> 확인)";
+        `(계속되면 <code>${isMac ? "~/Library/Application Support/UTGwReceipt/update.log" : "%LOCALAPPDATA%\\UTGwReceipt\\update.log"}</code> 확인)`;
     }
   }, 3000);
 }
