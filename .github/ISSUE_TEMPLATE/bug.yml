@@ -1,0 +1,35 @@
+name: 버그 신고
+description: 동작하지 않거나 잘못 입력되는 문제
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: "⚠️ 영수증 원본 이미지는 카드번호 등 개인정보가 있으므로 첨부하지 마세요. 필요하면 금액·카드번호를 가린 캡처만 올려주세요."
+  - type: input
+    id: version
+    attributes:
+      label: 확장 프로그램 버전
+      description: chrome://extensions 의 "UTHub 카드영수증 도우미" 카드에 표시된 버전
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 무엇이 잘못됐나요?
+      description: 어떤 버튼을 눌렀을 때 어떤 메시지가 떴는지, 기대한 결과는 무엇이었는지
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 순서
+      placeholder: |
+        1. 지급품의(개인) 화면에서 ...
+        2. 영수증 3장 분석 후 ...
+        3. 그룹웨어에 입력 클릭 → ...
+  - type: textarea
+    id: console
+    attributes:
+      label: 오류 메시지 / Console 캡처
+      description: 사이드패널 우클릭 → 검사 → Console 탭 내용

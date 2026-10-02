@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "UTHub 카드영수증 도우미",
+  "version": "0.1.0",
+  "description": "카드영수증 이미지를 Claude로 분석해 계정과목·프로젝트를 추천하고, UTHub 지급품의(개인 D005·법인 D015) 화면에 입력합니다.",
+  "permissions": ["storage", "sidePanel", "scripting", "activeTab", "alarms"],
+  "host_permissions": [
+    "https://api.anthropic.com/*",
+    "https://uthub.utinfo.co.kr/*",
+    "http://uthub.utinfo.co.kr/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "action": {
+    "default_title": "카드영수증 도우미 열기"
+  }
+}

@@ -1,0 +1,64 @@
+# v* 태그를 push하면: manifest 버전 확인 → ZIP 빌드 → GitHub Release 생성
+# (선택) 크롬 웹스토어 Secrets가 설정돼 있으면 웹스토어에도 업로드·게시
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      CWS_EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 태그와 manifest 버전 일치 확인
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VER=$(jq -r .version extension/manifest.json)
+          if [ "$TAG" != "$VER" ]; then
+            echo "::error::태그 v$TAG 와 manifest.json 버전 $VER 이 다릅니다."
+            exit 1
+          fi
+          echo "VERSION=$VER" >> "$GITHUB_ENV"
+
+      - name: ZIP 빌드
+        run: |
+          # 1) 업데이트용: update.ps1 이 받아 가는 확장 프로그램 폴더
+          mkdir -p dist/stage
+          cp -r extension dist/stage/gw-receipt-helper
+          (cd dist/stage && zip -r "../gw-receipt-helper-v$VERSION.zip" gw-receipt-helper)
+          # 2) 게시판 배포용 설치 파일: 확장 프로그램 + 설치/업데이트/제거 스크립트
+          mkdir -p dist/setup
+          cp -r extension dist/setup/gw-receipt-helper
+          cp tools/install.ps1 tools/update.ps1 tools/uninstall.ps1 dist/setup/
+          (cd dist/setup && zip -r "../gw-receipt-helper-setup-v$VERSION.zip" .)
+
+      - name: GitHub Release 생성
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # update.ps1 은 PC의 자동 업데이트 스크립트가 스스로를 갱신할 때 받아 간다
+          gh release create "$GITHUB_REF_NAME" "dist/gw-receipt-helper-v$VERSION.zip" \
+            "dist/gw-receipt-helper-setup-v$VERSION.zip" \
+            tools/install.ps1 tools/update.ps1 tools/uninstall.ps1 \
+            --title "v$VERSION" --generate-notes
+
+      - name: 크롬 웹스토어 업로드·게시 (Secrets 설정 시에만)
+        if: ${{ env.CWS_EXTENSION_ID != '' }}
+        env:
+          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          npx --yes chrome-webstore-upload-cli@3 \
+            --source "dist/gw-receipt-helper-v$VERSION.zip" \
+            --extension-id "$CWS_EXTENSION_ID" \
+            --client-id "$CWS_CLIENT_ID" \
+            --client-secret "$CWS_CLIENT_SECRET" \
+            --refresh-token "$CWS_REFRESH_TOKEN"

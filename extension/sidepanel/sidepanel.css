@@ -1,0 +1,72 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1f2328;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #2563eb;
+  --warn: #b45309;
+  --err: #dc2626;
+  --ok: #15803d;
+  --card: #f9fafb;
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 12px; font: 13px/1.45 "Malgun Gothic", system-ui, sans-serif; background: var(--bg); color: var(--fg); }
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+h1 { font-size: 15px; margin: 0; }
+h1 .ver { font-size: 11px; font-weight: 500; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; padding: 1px 7px; margin-left: 4px; vertical-align: 2px; }
+button { font: inherit; padding: 5px 10px; border: 1px solid var(--accent); background: var(--accent); color: #fff; border-radius: 6px; cursor: pointer; }
+button.ghost { background: transparent; color: var(--fg); border-color: var(--line); }
+button:disabled { opacity: .45; cursor: default; }
+input, select, textarea { font: inherit; width: 100%; padding: 4px 6px; border: 1px solid var(--line); border-radius: 4px; background: #fff; }
+label { display: block; color: var(--muted); font-size: 12px; }
+label > input, label > select, label > textarea { margin-top: 2px; color: var(--fg); }
+small, .muted { color: var(--muted); }
+.row { display: flex; gap: 8px; align-items: center; }
+#settings { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; display: grid; gap: 8px; background: var(--card); }
+#settings[hidden] { display: none; }
+#drop { border: 2px dashed var(--line); border-radius: 8px; padding: 14px; text-align: center; margin-bottom: 8px; }
+#drop.over { border-color: var(--accent); background: #eff6ff; }
+#drop p { margin: 2px 0; }
+.link { color: var(--accent); cursor: pointer; text-decoration: underline; display: inline; font-size: inherit; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+#summary { margin: 6px 0; }
+#list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.item { border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: var(--card); }
+.item.low { border-color: var(--warn); }
+.head { display: flex; gap: 8px; align-items: center; }
+.thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--line); background: #fff; cursor: zoom-in; }
+.meta { flex: 1; min-width: 0; }
+.fname { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status.err { color: var(--err); }
+.status.ok { color: var(--ok); }
+.status.warn { color: var(--warn); }
+#updateBanner { border: 1px solid var(--accent); background: #eff6ff; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; }
+#updateBanner[hidden] { display: none; }
+.keyStatus { display: block; margin-top: 2px; font-size: 12px; }
+.keyStatus.set { color: var(--ok); }
+.keyStatus.unset { color: var(--err); }
+button.danger { color: var(--err); border-color: #fca5a5; }
+#keyMsg.ok { color: var(--ok); }
+#keyMsg.err { color: var(--err); }
+.bulk { margin-bottom: 8px; display: grid; gap: 4px; }
+.bulk .row { flex-wrap: wrap; }
+label.check { display: inline-flex; align-items: center; gap: 4px; color: var(--fg); }
+label.check input, .pick { width: auto; margin: 0; }
+.pick { width: 16px; height: 16px; flex: none; }
+.item.picked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.modelPick { margin-bottom: 8px; }
+.project { margin-top: 8px; font-weight: 600; color: var(--fg); }
+/* 선택 안 된 드롭다운: 빨간 테두리 + "미선택" 표시 */
+select.unset { border: 2px solid var(--err); background: #fef2f2; }
+.unsetTag { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 8px; background: var(--err); color: #fff; font-size: 11px; font-weight: 600; }
+.unsetTag[hidden] { display: none; }
+/* 분석 확률 배지 */
+.prob { display: inline-block; margin-left: 2px; padding: 0 5px; border-radius: 8px; font-size: 11px; font-weight: 600; background: #dcfce7; color: var(--ok); }
+.prob.mid { background: #fef3c7; color: var(--warn); }
+.prob.low { background: #fee2e2; color: var(--err); }
+.prob:empty { display: none; }
+.fields { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.fields[hidden] { display: none; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.grid .wide { grid-column: 1 / -1; }
+.reason { margin-top: 4px; font-size: 12px; }

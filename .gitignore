@@ -1,0 +1,19 @@
+# 개인 영수증·그룹웨어 화면 저장본 — 카드번호 등 개인정보, 절대 커밋 금지
+_test/
+_sample/
+*.pptx
+*.png
+*.jpg
+*.jpeg
+*.pdf
+*.xlsx
+카드계정.txt
+
+# 빌드 산출물 (GitHub Release로 배포)
+dist/
+
+# API 키 등 비밀값 — 공개 저장소이므로 절대 커밋 금지
+api_key.txt
+*api_key*
+*.key
+.env

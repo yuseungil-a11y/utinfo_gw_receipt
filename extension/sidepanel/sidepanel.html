@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>카드영수증 도우미</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header>
+    <h1>카드영수증 도우미 <span id="appVersion" class="ver"></span></h1>
+    <button id="btnSettings" class="ghost" title="설정">⚙ 설정</button>
+  </header>
+
+  <div id="updateBanner" hidden></div>
+
+  <section id="settings" hidden>
+    <label>Claude API 키
+      <span id="keyStatus" class="keyStatus"></span>
+      <input id="apiKey" type="password" placeholder="sk-ant-..." autocomplete="off">
+    </label>
+    <div class="row">
+      <button id="btnKeyTest" class="ghost">키 확인</button>
+      <button id="btnKeyReset" class="ghost danger">키 초기화</button>
+      <small id="keyMsg"></small>
+    </div>
+    <label>모델
+      <select id="model"></select>
+    </label>
+    <div>
+      <div class="row">
+        <button id="btnLoadMeta" class="ghost">그룹웨어에서 불러오기</button>
+        <small id="metaStatus"></small>
+      </div>
+      <small>UTHub 탭이 열려 있을 때 지출 유형(대분류·소분류)과 전체 프로젝트(프로젝트 관리 화면 기준)를 불러옵니다.</small>
+    </div>
+    <label>프로젝트 목록 <small>(한 줄에 "ID|이름|별칭1,별칭2" — 별칭은 직접 추가. 파일 이름이 ID·이름·별칭과 비슷하면 자동 선택)</small>
+      <textarea id="projects" rows="7"></textarea>
+    </label>
+    <label>분류 힌트 <small>(예: "스타벅스는 복리후생비", "주유소는 여비교통비(개인차량)")</small>
+      <textarea id="hints" rows="3"></textarea>
+    </label>
+    <label class="check"><input id="recommendProject" type="checkbox"> Claude 프로젝트 추천 사용 <small>(파일 이름으로 정해지지 않은 영수증에 장소 단서로 추천)</small></label>
+    <label>프로젝트 힌트 <small>(지역·업체와 프로젝트 연결. 예: "김천·동김천 → 26-PRJ-0007", "울산 → 26-PRJ-0006")</small>
+      <textarea id="projectHints" rows="3"></textarea>
+    </label>
+    <div class="row">
+      <button id="btnSave">저장</button>
+      <span id="saveMsg" class="muted"></span>
+    </div>
+    <details>
+      <summary class="muted">진단 도구</summary>
+      <div class="row">
+        <button id="btnDump" class="ghost">화면 구조 추출</button>
+        <small>현재 그룹웨어 화면의 HTML을 파일로 저장합니다.</small>
+      </div>
+      <div class="row">
+        <button id="btnProbe" class="ghost">입력칸 진단</button>
+        <small>지급품의 화면의 입력칸 정보를 JSON으로 저장합니다. (대분류를 잠시 바꿨다가 되돌립니다)</small>
+      </div>
+    </details>
+  </section>
+
+  <section id="drop">
+    <p><strong>영수증 이미지/PDF를 여기에 끌어다 놓으세요</strong> <span class="muted">(1장 = 지출 1건)</span></p>
+    <p class="muted">또는 <label class="link">파일 선택<input id="fileInput" type="file" accept="image/*,application/pdf" multiple hidden></label> · 클립보드 붙여넣기(Ctrl+V)</p>
+  </section>
+
+  <div class="bulk">
+    <label>프로젝트 일괄 지정 <small>(아래 목록에서 체크한 영수증에 적용)</small></label>
+    <div class="row">
+      <select id="bulkProject"></select>
+    </div>
+    <div class="row">
+      <label class="check"><input id="pickAll" type="checkbox"> 전체 선택</label>
+      <button id="btnBulkPicked" class="ghost">체크한 영수증에 적용 (0)</button>
+      <button id="btnBulk" class="ghost">빈 칸에만 적용</button>
+    </div>
+  </div>
+
+  <label class="modelPick">분석 모델 <small>(정확도·속도·비용이 다름 — 영수증별 실제 비용이 아래에 표시됩니다)</small>
+    <select id="quickModel"></select>
+  </label>
+
+  <div class="toolbar">
+    <button id="btnAnalyze" disabled>분석 (0)</button>
+    <button id="btnFill" disabled>그룹웨어에 입력</button>
+    <button id="btnExport" class="ghost" disabled>JSON 저장</button>
+    <button id="btnClear" class="ghost">전체 지우기</button>
+  </div>
+  <p id="summary" class="muted"></p>
+
+  <ul id="list"></ul>
+
+  <template id="tplItem">
+    <li class="item">
+      <div class="head">
+        <input type="checkbox" class="pick" title="일괄 지정 대상으로 선택">
+        <img class="thumb" alt="">
+        <div class="meta">
+          <div class="fname"></div>
+          <div class="status"></div>
+        </div>
+        <button class="remove ghost" title="삭제">✕</button>
+      </div>
+      <label class="project">프로젝트 <span class="auto muted"></span><span class="unsetTag" hidden>미선택</span><select data-f="project_id"></select></label>
+      <div class="fields">
+        <div class="grid">
+          <label>지출일 <span class="prob" data-p="read"></span><input data-f="date" type="date"></label>
+          <label>금액 <span class="prob" data-p="read"></span><input data-f="amount" type="number" step="1"></label>
+          <label>유형 대분류 <span class="prob" data-p="category"></span><span class="unsetTag" hidden>미선택</span><select data-f="majorId"></select></label>
+          <label>소분류 <span class="prob" data-p="category"></span><span class="unsetTag" hidden>미선택</span><select data-f="minorId"></select></label>
+          <label class="wide">내용<input data-f="memo" maxlength="90"></label>
+          <label class="wide">가맹점 <small>(참고)</small><input data-f="merchant"></label>
+        </div>
+        <div class="reason muted"></div>
+      </div>
+    </li>
+  </template>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

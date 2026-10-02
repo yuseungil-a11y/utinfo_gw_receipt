@@ -1,0 +1,16 @@
+name: 기능 요청
+description: 새 기능이나 개선 아이디어
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: 필요한 기능
+      description: 어떤 상황에서 무엇이 불편한지, 어떻게 되면 좋을지
+    validations:
+      required: true
+  - type: textarea
+    id: example
+    attributes:
+      label: 예시
+      description: 예) "법인카드 지급품의(D015) 화면도 지원", "하이패스는 소분류를 톨비로 고정"
