@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- 유티정보 브랜드: 네이비→홈페이지 블루(#5678ff) 바탕, 흰 영수증, UT 별표(스카이·오렌지·그린) -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5678ff"/><stop offset="1" stop-color="#13132d"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="28" fill="url(#bg)"/>
+  <!-- 영수증: 아래쪽 톱니 -->
+  <path d="M30 20 h52 a4 4 0 0 1 4 4 v78 l-7 -6 l-7 6 l-7 -6 l-7 6 l-7 -6 l-7 6 l-7 -6 l-7 6 V24 a4 4 0 0 1 4 -4 z" fill="#ffffff"/>
+  <rect x="38" y="34" width="36" height="6" rx="3" fill="#13132d"/>
+  <rect x="38" y="48" width="26" height="5" rx="2.5" fill="#b1b8be"/>
+  <rect x="38" y="60" width="30" height="5" rx="2.5" fill="#b1b8be"/>
+  <rect x="38" y="74" width="20" height="7" rx="3.5" fill="#5678ff"/>
+  <!-- UT 별표 -->
+  <g transform="translate(92 88)">
+    <circle r="25" fill="#13132d" stroke="#ffffff" stroke-width="5"/>
+    <g stroke-width="6.5" stroke-linecap="round">
+      <line x1="-10" y1="-13" x2="10" y2="13" stroke="#f39200"/>
+      <line x1="10" y1="-13" x2="-10" y2="13" stroke="#94c11e"/>
+      <line x1="0" y1="-15" x2="0" y2="15" stroke="#36a9e1"/>
+      <line x1="-15" y1="0" x2="15" y2="0" stroke="#36a9e1"/>
+    </g>
+  </g>
+</svg>

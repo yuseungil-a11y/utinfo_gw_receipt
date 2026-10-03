@@ -44,12 +44,18 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Release 설명 = CHANGELOG.md의 "## v<버전>" 절 (확장 프로그램의 '변경 내용 보기'가 이 설명을 보여줌)
+          awk -v h="## v$VERSION" '{ t = $0; sub(/[ 	]+$/, "", t) } t==h {f=1; next} /^## v/ {f=0} f' CHANGELOG.md > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then
+            echo "::error::CHANGELOG.md에 '## v$VERSION' 절이 없습니다."
+            exit 1
+          fi
           # update.ps1 / update-mac.sh 는 PC의 자동 업데이트 스크립트가 스스로를 갱신할 때 받아 간다
           gh release create "$GITHUB_REF_NAME" "dist/gw-receipt-helper-v$VERSION.zip" \
             "dist/gw-receipt-helper-setup-v$VERSION.zip" \
             tools/install.ps1 tools/update.ps1 tools/uninstall.ps1 \
             tools/install-mac.sh tools/update-mac.sh tools/uninstall-mac.sh \
-            --title "v$VERSION" --generate-notes
+            --title "v$VERSION" --notes-file notes.md
 
       - name: 크롬 웹스토어 업로드·게시 (Secrets 설정 시에만)
         if: ${{ env.CWS_EXTENSION_ID != '' }}

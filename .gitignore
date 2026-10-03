@@ -3,6 +3,8 @@ _test/
 _sample/
 *.pptx
 *.png
+# 확장 프로그램 아이콘은 커밋 대상
+!extension/icons/*.png
 *.jpg
 *.jpeg
 *.pdf

@@ -84,3 +84,12 @@ fieldset.approval legend { font-weight: 600; padding: 0 4px; }
 
 .headBtns { gap: 4px; margin: 0; flex-shrink: 0; }
 .headBtns button { white-space: nowrap; }
+
+/* 새 버전 변경 내용 팝업 */
+.modalWrap { position: fixed; inset: 0; z-index: 50; background: rgba(15, 23, 42, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.modal { background: var(--bg); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.25); width: min(420px, calc(100vw - 32px)); min-width: 0; max-height: 80vh; display: flex; flex-direction: column; }
+.modal h2 { font-size: 14px; margin: 0; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.modalBody { padding: 10px 14px; overflow: auto; font-size: 12.5px; }
+.modalBody ul { margin: 0; padding-left: 18px; } .modalBody li { margin: 4px 0; }
+.modalBody p { margin: 0; color: var(--muted); }
+.modalBtns { justify-content: flex-end; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--line); }

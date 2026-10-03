@@ -731,18 +731,55 @@ async function checkUpdate() {
     const latest = String(rel.tag_name || "").replace(/^v/, "");
     const current = chrome.runtime.getManifest().version;
     if (!latest || !isNewer(latest, current)) return;
-    showUpdateBanner(latest, current, rel.html_url);
+    showUpdateBanner(latest, current, rel.body);
   } catch { /* 오프라인 등 */ }
 }
 
-function showUpdateBanner(latest, current, notesUrl) {
+// Release 설명(CHANGELOG.md의 해당 버전 절, 마크다운)을 간단한 HTML로 — 목록·굵게·코드만 처리
+function notesHtml(md) {
+  const inline = (s) => escapeHtml(s)
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>");
+  const lines = String(md || "").split(/\r?\n/).map((l) => l.trim())
+    .filter((l) => l && !/^\*\*Full Changelog\*\*/i.test(l) && !/^#/.test(l));
+  if (!lines.length) return "";
+  const items = lines.map((l) => (/^[-*] /.test(l) ? `<li>${inline(l.slice(2))}</li>` : `<li>${inline(l)}</li>`));
+  return `<ul>${items.join("")}</ul>`;
+}
+
+function showUpdateBanner(latest, current, notesBody) {
   const banner = $("#updateBanner");
+  const notes = notesHtml(notesBody);
   banner.innerHTML =
     `<div class="row"><span>새 버전 <strong>v${escapeHtml(latest)}</strong>이 있습니다 (현재 v${escapeHtml(current)})</span>` +
     `<button id="btnUpdateNow">지금 업데이트</button></div>` +
-    `<small id="updateMsg"><a href="${escapeHtml(notesUrl)}" target="_blank" rel="noopener">변경 내용 보기</a></small>`;
+    `<small id="updateMsg"><a href="#" id="btnNotes">변경 내용 보기</a></small>`;
   banner.hidden = false;
   $("#btnUpdateNow").onclick = () => runUpdate(latest);
+  $("#btnNotes").onclick = (e) => {
+    e.preventDefault();
+    showNotesPopup(`v${latest} 변경 내용`, notes || "<p>이 버전의 변경 내용이 등록되지 않았습니다.</p>", latest);
+  };
+}
+
+// 변경 내용 팝업(사이드패널 안, 외부 링크 없음) — 바깥·닫기·Esc로 닫힘
+function showNotesPopup(title, bodyHtml, latest) {
+  $("#notesPopup")?.remove();
+  const wrap = document.createElement("div");
+  wrap.id = "notesPopup";
+  wrap.className = "modalWrap";
+  wrap.innerHTML =
+    `<div class="modal" role="dialog" aria-modal="true" aria-labelledby="notesTitle">` +
+    `<h2 id="notesTitle">${escapeHtml(title)}</h2><div class="modalBody">${bodyHtml}</div>` +
+    `<div class="row modalBtns"><button id="notesUpdate">지금 업데이트</button><button id="notesClose" class="ghost">닫기</button></div></div>`;
+  document.body.appendChild(wrap);
+  const close = () => { wrap.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  wrap.onclick = (e) => { if (e.target === wrap) close(); };
+  $("#notesClose").onclick = close;
+  $("#notesUpdate").onclick = () => { close(); runUpdate(latest); };
+  $("#notesClose").focus();
 }
 
 // 1) 이미 새 파일이 설치돼 있으면 바로 다시 로드
@@ -761,8 +798,17 @@ async function runUpdate(latest) {
   let tab;
   try { tab = await chrome.tabs.create({ url: "utgwr-update://run", active: true }); } catch { /* 무시 */ }
   const started = Date.now();
-  // 크롬 확인 창에서 취소했을 수도 있으니 15초 뒤에는 버튼을 다시 누를 수 있게 함
-  setTimeout(() => { btn.disabled = false; }, 15000);
+  // 크롬 확인 창에서 취소했을 수도 있으니 15초 뒤에는 버튼을 다시 누를 수 있게 하고,
+  // 아무 창도 뜨지 않은 경우(설치 프로그램 없이 폴더를 직접 불러온 PC — 업데이트 프로그램이 등록돼 있지 않음)를 안내
+  setTimeout(async () => {
+    btn.disabled = false;
+    if (isNewer(latest, await diskVersion())) {
+      msg.innerHTML = `${isMac ? "업데이트 도우미" : "PowerShell"} 창이 뜨지 않았다면 이 PC는 설치 프로그램으로 설치되지 않은 상태입니다. ` +
+        `설치 파일의 <code>${isMac ? "install-mac.sh" : "install.ps1"}</code>로 설치한 뒤, 크롬에서 설치 폴더(` +
+        `<code>${isMac ? "~/Library/Application Support/UTGwReceipt/gw-receipt-helper" : "%LOCALAPPDATA%\\UTGwReceipt\\gw-receipt-helper"}</code>)를 불러와야 ` +
+        "자동 업데이트가 됩니다(📖 매뉴얼 2장). 계속 기다리는 중…";
+    }
+  }, 15000);
   const timer = setInterval(async () => {
     const v = await diskVersion();
     if (v && !isNewer(latest, v)) {
