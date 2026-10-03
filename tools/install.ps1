@@ -1,18 +1,48 @@
 ﻿# UTHub 카드영수증 도우미 - 설치 (PC당 1회, 관리자 권한 불필요)
 # 게시판에서 받은 설치 ZIP을 풀고 이 파일을 실행한다.
-# 1) 같은 폴더의 gw-receipt-helper 를 %LOCALAPPDATA%\UTGwReceipt\gw-receipt-helper 로 복사
-#    (같은 폴더에 없으면 GitHub 최신 Release에서 받음)
+# 1) 같은 폴더의 gw-receipt-helper 를 C:\UTGwReceipt\gw-receipt-helper 로 복사
+#    (같은 폴더에 없으면 GitHub 최신 Release에서 받음 — 설치 exe는 이 방식)
+#    C:\ 에 폴더를 만들 수 없는 PC(회사 보안 정책 등)는 %LOCALAPPDATA%\UTGwReceipt 에 설치
 # 2) 1시간마다 + 로그인 시 GitHub를 확인해 자동 업데이트하는 작업 스케줄러 등록
-# 실행: 우클릭 → PowerShell에서 실행  또는  powershell -ExecutionPolicy Bypass -File install.ps1
+# 실행: 설치 exe 더블클릭  또는  powershell -ExecutionPolicy Bypass -File install.ps1
 $ErrorActionPreference = "Stop"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $Repo = "yuseungil-a11y/utinfo_gw_receipt"
-$InstallRoot = Join-Path $env:LOCALAPPDATA "UTGwReceipt"
-$ExtDir = Join-Path $InstallRoot "gw-receipt-helper"
 $TaskName = "UTGwReceipt-AutoUpdate"
 $Here = $PSScriptRoot
-New-Item -ItemType Directory -Force $InstallRoot | Out-Null
+$OldRoot = Join-Path $env:LOCALAPPDATA "UTGwReceipt"
+if (Test-Path (Join-Path $OldRoot "gw-receipt-helper\manifest.json")) {
+    # 예전 위치에 이미 설치된 PC는 그 자리에서 갱신한다. 위치를 옮기면 크롬이 다른 확장으로 인식해
+    # API 키·결재선 설정이 사라지고 크롬에서 다시 불러와야 하기 때문.
+    $InstallRoot = $OldRoot
+} else {
+    # 직원이 찾기 쉬운 C:\UTGwReceipt 를 기본으로 (C:\ 아래 폴더 생성은 일반 사용자 권한으로 가능)
+    $InstallRoot = "C:\UTGwReceipt"
+    try {
+        $isNew = -not (Test-Path $InstallRoot)
+        $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+        if (-not $isNew) {
+            # 이미 있는 폴더가 다른 계정 소유면 쓰지 않는다(그 계정이 update.ps1 을 바꿀 수 있으므로)
+            $owner = (Get-Acl $InstallRoot).GetOwner([Security.Principal.SecurityIdentifier]).Value
+            if ($owner -ne $sid) { throw "C:\UTGwReceipt 는 다른 계정 소유" }
+        }
+        New-Item -ItemType Directory -Force $InstallRoot | Out-Null
+        if ($isNew) {
+            # C:\ 아래 새 폴더는 이 PC의 다른 계정도 수정할 수 있게 상속되므로, 본인·SYSTEM·관리자만 쓰도록 권한을 좁힌다
+            # (매시간 이 폴더의 update.ps1 이 본인 권한으로 실행되므로)
+            & icacls $InstallRoot /inheritance:r /grant:r "*${sid}:(OI)(CI)F" "*S-1-5-18:(OI)(CI)F" "*S-1-5-32-544:(OI)(CI)F" | Out-Null
+            if ($LASTEXITCODE -ne 0) { Write-Host "경고: 설치 폴더 권한 조정 실패(icacls $LASTEXITCODE) - 설치는 계속합니다." -ForegroundColor Yellow }
+        }
+        [IO.File]::WriteAllText((Join-Path $InstallRoot ".write-test"), "")
+        Remove-Item (Join-Path $InstallRoot ".write-test") -Force
+    } catch {
+        # 회사 보안 정책 등으로 C:\ 에 쓸 수 없거나, 다른 사용자가 이미 C:\UTGwReceipt 를 쓰는 PC
+        $InstallRoot = $OldRoot
+        New-Item -ItemType Directory -Force $InstallRoot | Out-Null
+    }
+}
+$ExtDir = Join-Path $InstallRoot "gw-receipt-helper"
 
 try {
     $UpdateScript = Join-Path $InstallRoot "update.ps1"
@@ -32,7 +62,7 @@ try {
         Write-Host "설치 파일에서 v$($m.version) 설치"
         # 게시판 파일이 예전 버전일 수 있으므로 설치 직후 GitHub 최신 버전을 한 번 확인 (실패해도 설치는 계속)
         Write-Host "최신 버전 확인 중..."
-        & powershell -NoProfile -ExecutionPolicy Bypass -File $UpdateScript
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $UpdateScript -InstallRoot $InstallRoot
         if ($LASTEXITCODE -ne 0) { Write-Host "최신 버전 확인 실패 - 1시간 안에 자동으로 다시 확인합니다." }
     } else {
         # 스크립트만 받은 경우: GitHub 최신 Release에서 설치
@@ -41,7 +71,8 @@ try {
         $asset = $rel.assets | Where-Object { $_.name -eq "update.ps1" } | Select-Object -First 1
         if (-not $asset) { throw "최신 Release($($rel.tag_name))에 update.ps1 이 없습니다." }
         Invoke-WebRequest $asset.browser_download_url -OutFile $UpdateScript -UseBasicParsing -TimeoutSec 60
-        & powershell -NoProfile -ExecutionPolicy Bypass -File $UpdateScript
+        # 옛 update.ps1(기본 위치가 %LOCALAPPDATA%)이 받아져도 이 위치에 설치되도록 -InstallRoot 를 명시
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $UpdateScript -InstallRoot $InstallRoot
         if ($LASTEXITCODE -ne 0) { throw "설치 실패 - $InstallRoot\update.log 를 확인하세요." }
     }
 
@@ -51,26 +82,46 @@ try {
     Set-ItemProperty -Path $proto -Name "(default)" -Value "URL:UTGwReceipt Update"
     Set-ItemProperty -Path $proto -Name "URL Protocol" -Value ""
     Set-ItemProperty -Path "$proto\shell\open\command" -Name "(default)" `
-        -Value "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$UpdateScript`""
+        -Value "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$UpdateScript`" -InstallRoot `"$InstallRoot`""
 
     # 자동 업데이트 작업 등록 (현재 사용자, 창 없이 실행) — 업데이트는 GitHub Release에서 받음
     $action = New-ScheduledTaskAction -Execute "powershell.exe" `
-        -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$UpdateScript`""
+        -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$UpdateScript`" -InstallRoot `"$InstallRoot`""
     $hourly = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Hours 1)
     $logon = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
     $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
     Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($hourly, $logon) -Settings $settings `
         -Description "UTHub 카드영수증 도우미 자동 업데이트 (GitHub Release 확인)" -Force | Out-Null
 
+    # 설치 폴더에 더블클릭용 제거 파일을 둔다 (PowerShell을 몰라도 제거 가능)
+    # 한 줄로 실행 후 종료: 제거 중 이 cmd 파일 자체가 지워져도 다음 줄을 읽으려다 오류 나지 않게, 작업 폴더도 바깥(%TEMP%)으로
+    $unCmd = "@echo off`r`ncd /d `"%TEMP%`" & powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"%~dp0uninstall.ps1`" & exit /b`r`n"
+    [IO.File]::WriteAllText((Join-Path $InstallRoot "제거.cmd"), $unCmd, [Text.Encoding]::Default)
+    if (-not (Test-Path (Join-Path $InstallRoot "uninstall.ps1"))) {
+        try {
+            Invoke-WebRequest "https://github.com/$Repo/releases/latest/download/uninstall.ps1" `
+                -OutFile (Join-Path $InstallRoot "uninstall.ps1") -UseBasicParsing -TimeoutSec 60
+        } catch { }
+    }
+
     Set-Clipboard -Value $ExtDir
     Write-Host ""
     Write-Host "설치 완료: $ExtDir"
     Write-Host "자동 업데이트: 작업 스케줄러 '$TaskName' (1시간마다, 로그인 시 GitHub 확인)"
     Write-Host ""
-    Write-Host "마지막으로 크롬에서 한 번만 해주세요:"
-    Write-Host "  1. 주소창에 chrome://extensions 입력"
-    Write-Host "  2. 오른쪽 위 '개발자 모드' 켜기"
-    Write-Host "  3. '압축해제된 확장 프로그램을 로드합니다' -> 위 폴더 선택 (경로는 클립보드에 복사됨)"
+    Write-Host "마지막으로 크롬에서 한 번만 해주세요 (크롬 확장 프로그램 화면을 지금 열어 드립니다):"
+    Write-Host "  1. 오른쪽 위 '개발자 모드' 켜기"
+    Write-Host "  2. 왼쪽 위 '압축해제된 확장 프로그램을 로드합니다' 클릭"
+    Write-Host "  3. 폴더 선택 창 위쪽 주소창에 Ctrl+V (경로가 복사되어 있음) -> Enter -> '폴더 선택'"
+    Write-Host "  ※ 예전에 다른 폴더로 불러온 도우미가 있으면 먼저 '삭제'하세요."
+    Write-Host "  ※ 크롬 화면이 열리지 않으면 크롬 주소창에 chrome://extensions 를 입력하세요."
+    Write-Host "  ※ 이미 이 폴더로 불러와 쓰고 있었다면 크롬에서 다시 할 일은 없습니다(설정 유지)."
+    # 크롬 확장 프로그램 화면 열기 (크롬 경로는 레지스트리 App Paths에서 찾음, 실패해도 무시)
+    try {
+        $chrome = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" -ErrorAction SilentlyContinue).'(default)'
+        if (-not $chrome) { $chrome = (Get-ItemProperty "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe" -ErrorAction SilentlyContinue).'(default)' }
+        if ($chrome -and (Test-Path $chrome)) { Start-Process $chrome "chrome://extensions" }
+    } catch { }
 } catch {
     Write-Host "설치 실패: $($_.Exception.Message)" -ForegroundColor Red
 }

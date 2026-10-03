@@ -26,7 +26,7 @@ Compress-Archive -Path (Join-Path $upd "gw-receipt-helper") -DestinationPath $zi
 # 게시판 배포용 설치 파일
 $set = Join-Path $stage "setup"
 Copy-Item $ext (Join-Path $set "gw-receipt-helper") -Recurse
-Copy-Item (Join-Path $root "tools\install.ps1"), (Join-Path $root "tools\update.ps1"), (Join-Path $root "tools\uninstall.ps1") $set
+Copy-Item (Join-Path $root "tools\install.cmd"), (Join-Path $root "tools\install.ps1"), (Join-Path $root "tools\update.ps1"), (Join-Path $root "tools\uninstall.ps1") $set
 # 맥용 설치/업데이트/제거 스크립트도 같은 ZIP에 (윈도우·맥 공용 설치 파일)
 Copy-Item (Join-Path $root "tools\install-mac.sh"), (Join-Path $root "tools\update-mac.sh"), (Join-Path $root "tools\uninstall-mac.sh") $set
 # 게시판에 올리는 파일은 직원이 알아보기 쉽게 한글 이름 (GitHub Release 첨부는 영문 이름 유지)
@@ -34,6 +34,74 @@ $zip2 = Join-Path $dist "유티허브 영수증 등록 도우미 v$version.zip"
 if (Test-Path $zip2) { [IO.File]::Delete($zip2) }
 Compress-Archive -Path (Join-Path $set "*") -DestinationPath $zip2
 
+# 설치 exe (윈도우 기본 IExpress): 더블클릭 → install.cmd → install.ps1 이 GitHub 최신 버전을 C:\UTGwReceipt 에 설치
+# exe에는 확장 프로그램 파일을 넣지 않는다(IExpress는 하위 폴더 미지원) — 설치 시 항상 최신 Release를 받음
+$exeStage = Join-Path $stage "exe"
+New-Item -ItemType Directory -Force $exeStage | Out-Null
+Copy-Item (Join-Path $root "tools\install.cmd"), (Join-Path $root "tools\install.ps1") $exeStage
+$exeTmp = Join-Path $stage "gwr-setup.exe"   # IExpress 출력은 영문 이름으로 만든 뒤 한글 이름으로 바꿈
+$sed = @"
+[Version]
+Class=IEXPRESS
+SEDVersion=3
+[Options]
+PackagePurpose=InstallApp
+ShowInstallProgramWindow=0
+HideExtractAnimation=1
+UseLongFileName=1
+InsideCompressed=0
+CAB_FixedSize=0
+CAB_ResvCodeSigning=0
+RebootMode=N
+InstallPrompt=%InstallPrompt%
+DisplayLicense=%DisplayLicense%
+FinishMessage=%FinishMessage%
+TargetName=%TargetName%
+FriendlyName=%FriendlyName%
+AppLaunched=%AppLaunched%
+PostInstallCmd=%PostInstallCmd%
+AdminQuietInstCmd=%AdminQuietInstCmd%
+UserQuietInstCmd=%UserQuietInstCmd%
+SourceFiles=SourceFiles
+[Strings]
+InstallPrompt=
+DisplayLicense=
+FinishMessage=
+TargetName=$exeTmp
+FriendlyName=UTHub Card Receipt Helper Setup
+AppLaunched=cmd /c .\install.cmd
+PostInstallCmd=<None>
+AdminQuietInstCmd=
+UserQuietInstCmd=
+FILE0="install.cmd"
+FILE1="install.ps1"
+[SourceFiles]
+SourceFiles0=$exeStage\
+[SourceFiles0]
+%FILE0%=
+%FILE1%=
+"@
+$sedPath = Join-Path $stage "setup.sed"
+[IO.File]::WriteAllText($sedPath, $sed, [Text.Encoding]::ASCII)
+Start-Process -FilePath "$env:WINDIR\System32\iexpress.exe" -ArgumentList "/N", "/Q", $sedPath -Wait -NoNewWindow
+if (-not (Test-Path $exeTmp)) { throw "설치 exe 생성 실패 (IExpress)" }
+# exe 아이콘을 브랜드 아이콘(tools\setup.ico)으로 교체 — rcedit(Electron 공식 도구)을 처음 한 번 .tools\ 에 받아 둠
+$rcedit = Join-Path $root ".tools\rcedit-x64.exe"
+if (-not (Test-Path $rcedit)) {
+    New-Item -ItemType Directory -Force (Split-Path $rcedit) | Out-Null
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-WebRequest "https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe" -OutFile $rcedit -UseBasicParsing
+}
+& $rcedit $exeTmp --set-icon (Join-Path $root "tools\setup.ico") `
+    --set-version-string "FileDescription" "UTHub Card Receipt Helper Setup" `
+    --set-version-string "ProductName" "UTHub Card Receipt Helper" `
+    --set-version-string "CompanyName" "UTinfo" --set-file-version $version --set-product-version $version
+if ($LASTEXITCODE -ne 0) { Write-Warning "exe 아이콘 적용 실패 (기본 아이콘으로 계속)" }
+$exe = Join-Path $dist "유티허브 영수증 등록 도우미 설치 v$version.exe"
+if (Test-Path $exe) { [IO.File]::Delete($exe) }
+Move-Item $exeTmp $exe
+
 [IO.Directory]::Delete($stage, $true)
 Write-Host "Built: $zip1"
 Write-Host "Built: $zip2"
+Write-Host "Built: $exe"

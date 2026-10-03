@@ -2,7 +2,8 @@
 # GitHub Release 최신 버전을 확인해 설치 폴더(gw-receipt-helper)를 새 버전으로 교체한다.
 # 작업 스케줄러가 1시간마다 실행. 수동 실행: powershell -ExecutionPolicy Bypass -File update.ps1
 param(
-    [string]$InstallRoot = (Join-Path $env:LOCALAPPDATA "UTGwReceipt"),
+    # 기본값 = 이 스크립트가 있는 폴더 (C:\UTGwReceipt 든 예전 위치 %LOCALAPPDATA%\UTGwReceipt 든 그대로 따라감)
+    [string]$InstallRoot = $(if ($PSScriptRoot) { $PSScriptRoot } else { Join-Path $env:LOCALAPPDATA "UTGwReceipt" }),
     [switch]$SkipProtocol   # 시험용: URL 프로토콜(레지스트리) 등록을 건너뜀
 )
 $ErrorActionPreference = "Stop"
@@ -21,19 +22,19 @@ function Write-Log([string]$msg) {
 
 # 확장 프로그램의 "지금 업데이트" 버튼이 이 스크립트를 바로 실행할 수 있도록
 # 현재 사용자용 URL 프로토콜(utgwr-update://)을 등록한다. (HKCU, 관리자 권한 불필요, 매번 갱신)
-function Register-UpdateProtocol([string]$scriptPath) {
+function Register-UpdateProtocol([string]$scriptPath, [string]$root) {
     $base = "HKCU:\Software\Classes\utgwr-update"
     New-Item -Path "$base\shell\open\command" -Force | Out-Null
     Set-ItemProperty -Path $base -Name "(default)" -Value "URL:UTGwReceipt Update"
     Set-ItemProperty -Path $base -Name "URL Protocol" -Value ""
-    $cmd = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
+    $cmd = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`" -InstallRoot `"$root`""
     Set-ItemProperty -Path "$base\shell\open\command" -Name "(default)" -Value $cmd
 }
 
 try {
     # 레지스트리 정책 등으로 실패해도 업데이트 자체는 계속 (버튼만 못 쓰게 됨)
     if (-not $SkipProtocol) {
-        try { Register-UpdateProtocol (Join-Path $InstallRoot "update.ps1") }
+        try { Register-UpdateProtocol (Join-Path $InstallRoot "update.ps1") $InstallRoot }
         catch { Write-Log "경고: 업데이트 버튼용 프로토콜 등록 실패 - $($_.Exception.Message)" }
     }
 

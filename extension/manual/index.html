@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>유티허브 영수증 등록 도우미 사용 매뉴얼 v0.5.1</title><style>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>유티허브 영수증 등록 도우미 사용 매뉴얼 v0.6.0</title><style>
 @page { size: A4; margin: 16mm 15mm 16mm; }
 @page :first { margin: 0; }
 :root { --navy:#13132d; --blue:#144194; --sky:#36a9e1; --orange:#f39200; --green:#94c11e; --ink:#3d3c3c; --ink2:#1d1d1b; --muted:#706f6f; --line:#dadada; }
@@ -41,11 +41,11 @@ figure img { max-height: none; }
 @media print { .appbar { position: static; } }</style></head><body><header class="appbar"><svg viewBox="-50 -50 100 100" width="30" height="30">
   <g stroke-width="9" stroke-linecap="butt">
   <line x1="-30" y1="-40" x2="30" y2="40" stroke="#f39200"/><line x1="30" y1="-40" x2="-30" y2="40" stroke="#94c11e"/>
-  <line x1="0" y1="-48" x2="0" y2="48" stroke="#36a9e1"/><line x1="-48" y1="0" x2="48" y2="0" stroke="#36a9e1"/></g></svg><strong>UTHub 카드영수증 도우미</strong><span>사용 매뉴얼</span><b class="v">v0.5.1</b></header>
+  <line x1="0" y1="-48" x2="0" y2="48" stroke="#36a9e1"/><line x1="-48" y1="0" x2="48" y2="0" stroke="#36a9e1"/></g></svg><strong>UTHub 카드영수증 도우미</strong><span>사용 매뉴얼</span><b class="v">v0.6.0</b></header>
 <main><p>카드영수증 이미지를 넣으면 Claude가 지출일·금액·지출 유형을 읽어 UTHub 지급품의(개인·법인) 화면에 영수증 수만큼 자동 입력하는 크롬 확장 프로그램입니다. 사용자는 프로젝트를 확인하고 완료(요청)만 누르면 됩니다. 결재선(합의자·승인자·수신자)은 설정에 한 번 저장해 두면 자동으로 들어갑니다.</p>
 <h2>1. 배포 방식</h2>
 <p>설치 파일은 <strong>사내 게시판</strong>에 올려 배포하고, 업데이트만 <strong>GitHub</strong>를 씁니다. 각 PC는 GitHub를 1시간마다 확인해 새 버전을 자동으로 설치합니다.</p>
-<table><thead><tr><th>구성 요소</th><th>하는 일</th><th>위치</th></tr></thead><tbody><tr><td>GitHub Release</td><td>업데이트용 ZIP, 게시판용 설치 ZIP, 스크립트 보관</td><td><a href="https://github.com/yuseungil-a11y/utinfo_gw_receipt/releases/latest">최신 Release</a></td></tr><tr><td>설치 ZIP (install.ps1 포함)</td><td>PC당 1회: 압축 풀고 install.ps1 실행 → 설치와 자동 업데이트 등록</td><td>사내 게시판</td></tr><tr><td>update.ps1</td><td>1시간마다와 로그인 시: 새 버전이면 받아서 설치 폴더 교체</td><td><code>%LOCALAPPDATA%\UTGwReceipt</code></td></tr><tr><td>확장 프로그램</td><td>크롬 시작 시 새 버전 확인(아이콘에 UP 표시), 상단 '지금 업데이트' 버튼, 30분마다 설치 폴더 버전 확인 후 스스로 다시 로드</td><td>크롬</td></tr></tbody></table>
+<table><thead><tr><th>구성 요소</th><th>하는 일</th><th>위치</th></tr></thead><tbody><tr><td>GitHub Release</td><td>업데이트용 ZIP, 설치 ZIP, 스크립트 보관</td><td><a href="https://github.com/yuseungil-a11y/utinfo_gw_receipt/releases/latest">최신 Release</a></td></tr><tr><td>설치 파일(exe)</td><td>PC당 1회: 더블클릭 → 설치와 자동 업데이트 등록</td><td>사내 게시판</td></tr><tr><td>update.ps1</td><td>1시간마다와 로그인 시: 새 버전이면 받아서 설치 폴더 교체</td><td><code>C:\UTGwReceipt</code></td></tr><tr><td>확장 프로그램</td><td>크롬 시작 시 새 버전 확인(아이콘에 UP 표시), 상단 '지금 업데이트' 버튼, 30분마다 설치 폴더 버전 확인 후 스스로 다시 로드</td><td>크롬</td></tr></tbody></table>
 <ul>
 <li>업데이트 후에도 설치 폴더가 같아서 API 키 등 설정이 그대로 유지됩니다.
 </li>
@@ -54,23 +54,26 @@ figure img { max-height: none; }
 <h2>2. 설치 (직원용, PC당 1회)</h2>
 <p>게시판의 설치 파일로 한 번만 설치하면 이후 업데이트는 자동입니다. 관리자 권한은 필요 없고 5분이면 끝납니다.</p>
 <ol>
-<li>사내 게시판에서 <code>유티허브 영수증 등록 도우미 v&lt;버전&gt;.zip</code>을 내려받아 압축을 풉니다. 풀린 폴더에 <code>install.ps1</code>과 <code>gw-receipt-helper</code> 폴더가 있습니다.
+<li>게시판에서 <code>유티허브 영수증 등록 도우미 설치 v&lt;버전&gt;.exe</code>를 내려받아 <strong>더블클릭</strong>합니다.
 </li>
-<li><code>install.ps1</code>을 우클릭 → <strong>PowerShell에서 실행</strong>을 누릅니다. 보안 확인이 뜨면 열기(또는 R)를 고릅니다.
+<li>"Windows의 PC 보호" 창이 뜨면 <strong>추가 정보</strong> → <strong>실행</strong>을 누릅니다(사내 프로그램이라 서명이 없어 나오는 안내).
+</li>
+<li>설치 창이 열리고 GitHub에서 최신 버전을 받아 <code>C:\UTGwReceipt</code>에 설치합니다. "설치 완료"가 나오면 크롬 확장 프로그램 화면이 자동으로 열리고(안 열리면 크롬 주소창에 chrome://extensions 입력), 설치 폴더 경로가 클립보드에 복사됩니다.
+</li>
+<li>크롬 확장 프로그램 화면 오른쪽 위 <strong>개발자 모드</strong>를 켭니다.
+</li>
+<li><strong>압축해제된 확장 프로그램을 로드합니다</strong>를 누르고, 폴더 선택 창 위쪽 주소창에 <strong>Ctrl+V</strong> → Enter → <strong>폴더 선택</strong>을 누릅니다(<code>C:\UTGwReceipt\gw-receipt-helper</code>).
+</li>
+<li>"UTHub 카드영수증 도우미"가 목록에 나타나면 성공입니다. 퍼즐(🧩) 아이콘에서 핀(📌)을 눌러 툴바에 고정하고, 설치 창은 Enter로 닫습니다.
 <ul>
-<li>실행이 막히면 그 폴더에서 PowerShell을 열고 <code>powershell -ExecutionPolicy Bypass -File .\install.ps1</code>을 입력합니다.
+<li>예전에 다른 폴더(압축을 푼 폴더 등)로 불러온 도우미가 있으면 먼저 <strong>삭제</strong>하고 위 폴더로 다시 불러옵니다.
+</li>
+<li>zip 설치 파일을 쓰는 경우에는 압축을 풀고 <code>install.cmd</code>를 더블클릭합니다(같은 동작).
 </li></ul>
-</li>
-<li>"설치 완료"가 나오면 <code>%LOCALAPPDATA%\UTGwReceipt\gw-receipt-helper</code>에 설치된 것이고, 이 경로가 클립보드에 복사됩니다. 설치 직후 GitHub에서 최신 버전을 한 번 확인해, 게시판 파일이 예전 버전이면 자동으로 새 버전을 받습니다. Enter를 눌러 창을 닫습니다. 내려받은 압축 폴더는 이제 지워도 됩니다.
-</li>
-<li>크롬 주소창에 <code>chrome://extensions</code>를 입력하고 오른쪽 위 <strong>개발자 모드</strong>를 켭니다.
-</li>
-<li><strong>압축해제된 확장 프로그램을 로드합니다</strong>를 누르고, 폴더 선택 창 주소창에 Ctrl+V로 경로를 붙여넣어 그 폴더를 선택합니다.
-</li>
-<li>"UTHub 카드영수증 도우미"가 목록에 나타나면 성공입니다. 퍼즐(🧩) 아이콘에서 핀(📌)을 눌러 툴바에 고정합니다.
 </li></ol>
-<table><thead><tr><th>확인 항목</th><th>방법</th></tr></thead><tbody><tr><td>자동 업데이트 등록 여부</td><td>작업 스케줄러에 <code>UTGwReceipt-AutoUpdate</code> 작업이 있음</td></tr><tr><td>업데이트 기록</td><td><code>%LOCALAPPDATA%\UTGwReceipt\update.log</code></td></tr><tr><td>제거</td><td>설치 폴더 <code>%LOCALAPPDATA%\UTGwReceipt</code>의 <code>uninstall.ps1</code> 실행 후 <code>chrome://extensions</code>에서 삭제</td></tr></tbody></table>
-<p>설치 폴더(<code>%LOCALAPPDATA%\UTGwReceipt</code>)를 옮기거나 지우지 마세요. 크롬이 다른 확장 프로그램으로 인식해 API 키 등 설정을 다시 입력해야 합니다.</p>
+<p>크롬이 "위험할 수 있는 파일"로 다운로드를 막거나 백신이 설치 파일을 막으면, zip 설치 파일을 풀고 <code>install.cmd</code>를 더블클릭합니다. 이미 설치한 PC는 설치 파일을 다시 실행할 필요가 없습니다(다시 실행해도 같은 폴더를 갱신하고 설정은 유지).</p>
+<table><thead><tr><th>확인 항목</th><th>방법</th></tr></thead><tbody><tr><td>자동 업데이트 등록 여부</td><td>작업 스케줄러에 <code>UTGwReceipt-AutoUpdate</code> 작업이 있음</td></tr><tr><td>업데이트 기록</td><td><code>C:\UTGwReceipt\update.log</code> (탐색기가 확장명을 숨기면 흰 문서 아이콘의 <code>update</code>로 보임)</td></tr><tr><td>제거</td><td>설치 폴더 <code>C:\UTGwReceipt</code>의 <code>제거.cmd</code> 더블클릭 후 <code>chrome://extensions</code>에서 삭제</td></tr></tbody></table>
+<p>설치 폴더(<code>C:\UTGwReceipt</code>)를 옮기거나 지우지 마세요. 크롬이 다른 확장 프로그램으로 인식해 API 키 등 설정을 다시 입력해야 합니다.</p>
 <h3>맥북(macOS) 설치</h3>
 <p>같은 설치 파일에 맥용 스크립트가 함께 들어 있습니다. 설치 후 자동 업데이트와 <strong>지금 업데이트</strong> 버튼도 윈도우와 같이 동작합니다.</p>
 <ol>
@@ -90,7 +93,7 @@ figure img { max-height: none; }
 </li>
 <li>설치 후 "백그라운드 항목이 추가됨" 알림이 뜨면 정상입니다(자동 업데이트 작업). 시스템 설정 &gt; 로그인 항목에서 이 항목(bash)을 끄면 자동 업데이트가 멈추니 켜 둡니다.
 </li>
-<li>문제 해결(6장)의 <code>install.ps1</code>은 맥에서 <code>install-mac.sh</code>, <code>%LOCALAPPDATA%\UTGwReceipt</code>는 <code>~/Library/Application Support/UTGwReceipt</code>, "PowerShell 열기"는 "UTGwReceipt Updater 열기"로 바꿔 읽습니다.
+<li>윈도우용 설치 exe·<code>install.cmd</code>는 맥에서 <code>install-mac.sh</code>, <code>C:\UTGwReceipt</code>는 <code>~/Library/Application Support/UTGwReceipt</code>, "PowerShell 열기"는 "UTGwReceipt Updater 열기"로 바꿔 읽습니다.
 </li></ul>
 <p><strong>업데이트</strong></p>
 <ul>
@@ -218,11 +221,11 @@ figure img { max-height: none; }
 <p>개인카드와 법인카드 영수증이 한꺼번에 있으면, 개인 건을 지급품의(개인)에 먼저 입력한 뒤 <strong>전체 지우기</strong>를 하고 법인 건을 넣어 지급품의(법인)에 입력합니다.</p>
 <h2>6. 문제 해결</h2>
 <p>대부분은 화면 새로고침과 목록 다시 불러오기로 해결됩니다.</p>
-<table><thead><tr><th>증상</th><th>원인</th><th>조치</th></tr></thead><tbody><tr><td>"그룹웨어에 입력" 버튼이 회색</td><td>분석이 끝난 영수증이 없음</td><td>영수증을 넣고 <strong>분석</strong>부터 다시</td></tr><tr><td>"API 키가 올바르지 않습니다 (401)"</td><td>키 오타 또는 폐기된 키</td><td>설정에서 키를 다시 붙여넣기, 안 되면 3장 절차로 새 키 발급</td></tr><tr><td>"요청 한도 초과 (429)"</td><td>단시간에 많은 요청 또는 월 한도 도달</td><td>잠시 후 분석 다시. 계속되면 배포 담당자에게 문의</td></tr><tr><td>"지출 유형을 그룹웨어에서 불러오지 않음"</td><td>대분류·소분류 목록이 없음</td><td>UTHub 탭을 열고 ⚙ 설정 → <strong>그룹웨어에서 불러오기</strong> 후, 대분류·소분류를 직접 고르거나 ✕로 지우고 다시 넣어 분석</td></tr><tr><td>"UTHub 탭을 연 상태에서 눌러주세요"</td><td>현재 보고 있는 탭이 UTHub가 아님</td><td>지급품의 화면 탭을 누른 뒤 다시 시도</td></tr><tr><td>"화면 state를 찾지 못했습니다"</td><td>지급품의(개인·법인) 화면이 아니거나 그룹웨어 화면이 바뀜</td><td>화면 F5 후 다시. 계속되면 GitHub Issues에 메시지 캡처와 함께 등록</td></tr><tr><td>프로젝트가 목록에 없음</td><td>목록을 불러온 뒤 새로 생긴 프로젝트</td><td><strong>그룹웨어에서 불러오기</strong> 다시</td></tr><tr><td>확장 프로그램이 목록에서 사라짐</td><td>설치한 폴더를 지웠거나 옮김</td><td>2장 설치(install.ps1)를 다시. API 키도 다시 입력</td></tr></tbody></table>
-<p>지금 쓰는 버전은 사이드패널 제목 옆(예: v0.5.1)에 표시됩니다. 새 버전이 반영되지 않으면 <code>%LOCALAPPDATA%\UTGwReceipt\update.log</code>의 마지막 줄을 확인합니다. "최신 상태"나 "업데이트 완료"면 정상이고, "오류"면 그 내용을 GitHub Issues에 등록합니다.</p>
+<table><thead><tr><th>증상</th><th>원인</th><th>조치</th></tr></thead><tbody><tr><td>"그룹웨어에 입력" 버튼이 회색</td><td>분석이 끝난 영수증이 없음</td><td>영수증을 넣고 <strong>분석</strong>부터 다시</td></tr><tr><td>"API 키가 올바르지 않습니다 (401)"</td><td>키 오타 또는 폐기된 키</td><td>설정에서 키를 다시 붙여넣기, 안 되면 3장 절차로 새 키 발급</td></tr><tr><td>"요청 한도 초과 (429)"</td><td>단시간에 많은 요청 또는 월 한도 도달</td><td>잠시 후 분석 다시. 계속되면 배포 담당자에게 문의</td></tr><tr><td>"지출 유형을 그룹웨어에서 불러오지 않음"</td><td>대분류·소분류 목록이 없음</td><td>UTHub 탭을 열고 ⚙ 설정 → <strong>그룹웨어에서 불러오기</strong> 후, 대분류·소분류를 직접 고르거나 ✕로 지우고 다시 넣어 분석</td></tr><tr><td>"UTHub 탭을 연 상태에서 눌러주세요"</td><td>현재 보고 있는 탭이 UTHub가 아님</td><td>지급품의 화면 탭을 누른 뒤 다시 시도</td></tr><tr><td>"화면 state를 찾지 못했습니다"</td><td>지급품의(개인·법인) 화면이 아니거나 그룹웨어 화면이 바뀜</td><td>화면 F5 후 다시. 계속되면 GitHub Issues에 메시지 캡처와 함께 등록</td></tr><tr><td>프로젝트가 목록에 없음</td><td>목록을 불러온 뒤 새로 생긴 프로젝트</td><td><strong>그룹웨어에서 불러오기</strong> 다시</td></tr><tr><td>확장 프로그램이 목록에서 사라짐</td><td>설치한 폴더를 지웠거나 옮김</td><td>2장 설치(설치 exe)를 다시. API 키도 다시 입력</td></tr></tbody></table>
+<p>지금 쓰는 버전은 사이드패널 제목 옆(예: v0.6.0)에 표시됩니다. 새 버전이 반영되지 않으면 <code>C:\UTGwReceipt\update.log</code>의 마지막 줄을 확인합니다. "최신 상태"나 "업데이트 완료"면 정상이고, "오류"면 그 내용을 GitHub Issues에 등록합니다.</p>
 <p>해결되지 않으면 사이드패널에서 우클릭 → <strong>검사</strong> → Console 탭을 캡처해 GitHub Issues에 등록합니다.</p>
 <h2>7. 보안·비용 유의사항</h2>
 <p>영수증 이미지는 분석을 위해 Anthropic(Claude) API로 전송되므로, 전사 배포 전에 사내 개인정보·보안 담당자의 확인을 받는 것을 권장합니다.</p>
 <table><thead><tr><th>항목</th><th>내용</th></tr></thead><tbody><tr><td>외부로 나가는 것</td><td>영수증 이미지(카드번호 일부·가맹점·금액 포함), 지출 유형 목록, 분류 힌트. 'Claude 프로젝트 추천 사용'이 켜져 있으면(기본) 내 프로젝트 목록(ID·이름·별칭)과 프로젝트 힌트도 전송</td></tr><tr><td>외부로 나가지 않는 것</td><td>전체 프로젝트 목록, 그룹웨어 로그인 정보, 승인자·수신자 정보 (추천을 끄면 프로젝트 정보는 전송하지 않음)</td></tr><tr><td>API 키 저장 위치</td><td>각 PC의 크롬 확장 저장소(암호화되지 않음). 공용 PC에는 설치하지 않습니다</td></tr><tr><td>그룹웨어 접근</td><td>사용자가 로그인한 UTHub 탭에서만 동작하며, 최종 요청은 사용자가 직접 누릅니다</td></tr><tr><td>비용</td><td>사이드패널에 영수증별 실제 비용($)과 합계가 표시됩니다. 대략 Opus 5.5 기준 영수증 1장당 $0.01~0.03, Haiku 4.5는 그 수 분의 1, Fable 5.1은 약 2.5배</td></tr></tbody></table>
 <p>비용은 Anthropic Console의 사용량 화면에서 키별로 확인할 수 있고, 월 한도를 걸어 두면 초과 사용을 막을 수 있습니다.</p>
-<p><strong>설치·업데이트가 PC에 만드는 것</strong>: 설치 폴더 <code>%LOCALAPPDATA%\UTGwReceipt</code>, 작업 스케줄러 <code>UTGwReceipt-AutoUpdate</code>(1시간마다·로그인 시), 현재 사용자 레지스트리 <code>HKCU\Software\Classes\utgwr-update</code>('지금 업데이트' 버튼용). 확장 프로그램은 새 버전 확인을 위해 GitHub API에 접속합니다. 자동 업데이트는 GitHub Release의 파일을 서명 확인 없이 실행하므로, 배포 담당자는 GitHub 계정에 2단계 인증을 켜 두어야 합니다.</p></main></body></html>
+<p><strong>설치·업데이트가 PC에 만드는 것</strong>: 설치 폴더 <code>C:\UTGwReceipt</code>, 작업 스케줄러 <code>UTGwReceipt-AutoUpdate</code>(1시간마다·로그인 시), 현재 사용자 레지스트리 <code>HKCU\Software\Classes\utgwr-update</code>('지금 업데이트' 버튼용). 확장 프로그램은 새 버전 확인을 위해 GitHub API에 접속합니다. 자동 업데이트는 GitHub Release의 파일을 서명 확인 없이 실행하므로, 배포 담당자는 GitHub 계정에 2단계 인증을 켜 두어야 합니다.</p></main></body></html>

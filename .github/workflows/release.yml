@@ -36,7 +36,7 @@ jobs:
           # 2) 게시판 배포용 설치 파일: 확장 프로그램 + 설치/업데이트/제거 스크립트(윈도우 .ps1 · 맥 .sh)
           mkdir -p dist/setup
           cp -r extension dist/setup/gw-receipt-helper
-          cp tools/install.ps1 tools/update.ps1 tools/uninstall.ps1 dist/setup/
+          cp tools/install.cmd tools/install.ps1 tools/update.ps1 tools/uninstall.ps1 dist/setup/
           cp tools/install-mac.sh tools/update-mac.sh tools/uninstall-mac.sh dist/setup/
           (cd dist/setup && zip -r "../gw-receipt-helper-setup-v$VERSION.zip" .)
 

@@ -1,2 +1,4 @@
 # macOS 스크립트는 윈도우에서 체크아웃해도 LF 유지 (CRLF면 bash가 실행하지 못함)
 *.sh text eol=lf
+# 윈도우 배치 파일은 CRLF 유지
+*.cmd text eol=crlf

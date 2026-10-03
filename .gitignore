@@ -19,3 +19,6 @@ api_key.txt
 *api_key*
 *.key
 .env
+
+# 빌드 도구 (rcedit 등, build.ps1이 처음 실행 때 받음)
+.tools/

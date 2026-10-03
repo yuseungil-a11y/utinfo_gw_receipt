@@ -10,10 +10,13 @@
 
 ## 설치 (PC당 1회)
 
-1. [최신 Release](../../releases/latest)에서 `install.ps1`을 내려받아 우클릭 → PowerShell에서 실행
-2. `chrome://extensions` → 개발자 모드 → 압축해제된 확장 프로그램 로드 → `%LOCALAPPDATA%\UTGwReceipt\gw-receipt-helper` 선택
+1. 게시판의 `유티허브 영수증 등록 도우미 설치 vX.Y.Z.exe`를 더블클릭 (Windows PC 보호 창이 뜨면 "추가 정보" → "실행")
+   - 설치 exe(윈도우 기본 IExpress로 `build.ps1`이 생성)는 GitHub 최신 Release를 `C:\UTGwReceipt`에 설치합니다. C:\에 폴더를 만들 수 없는 PC는 `%LOCALAPPDATA%\UTGwReceipt`.
+   - zip을 쓰는 경우: 압축을 풀고 `install.cmd` 더블클릭 (동봉된 버전으로 설치 후 최신 확인)
+2. 설치가 끝나면 크롬 확장 프로그램 화면이 열립니다 → 개발자 모드 → 압축해제된 확장 프로그램 로드 → `C:\UTGwReceipt\gw-receipt-helper` 선택 (경로는 클립보드에 복사됨)
 
-이후에는 작업 스케줄러(`UTGwReceipt-AutoUpdate`)가 1시간마다 새 Release를 확인해 설치 폴더를 교체하고, 확장 프로그램은 30분 안에 스스로 다시 로드합니다. 제거는 `uninstall.ps1`.
+이후에는 작업 스케줄러(`UTGwReceipt-AutoUpdate`)가 1시간마다 새 Release를 확인해 설치 폴더를 교체하고, 확장 프로그램은 30분 안에 스스로 다시 로드합니다. 제거는 설치 폴더의 `제거.cmd`.
+`update.ps1`은 자기가 있는 폴더를 설치 위치로 쓰므로 예전 위치(`%LOCALAPPDATA%\UTGwReceipt`)에 설치된 PC도 그대로 업데이트됩니다.
 
 **macOS**: 설치 ZIP을 풀고 터미널에서 `bash install-mac.sh` → `chrome://extensions`에서 `~/Library/Application Support/UTGwReceipt/gw-receipt-helper` 로드(폴더 선택 창에서 Cmd+Shift+G, 경로는 클립보드에 복사됨). 자동 업데이트는 launchd(`kr.co.utinfo.gwreceipt.update`, 1시간마다·로그인 시), "지금 업데이트" 버튼은 설치 시 만드는 `UTGwReceipt Updater.app`(utgwr-update:// 처리)이 맡습니다. 제거는 `uninstall-mac.sh`.
 

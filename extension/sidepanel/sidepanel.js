@@ -804,8 +804,8 @@ async function runUpdate(latest) {
     btn.disabled = false;
     if (isNewer(latest, await diskVersion())) {
       msg.innerHTML = `${isMac ? "업데이트 도우미" : "PowerShell"} 창이 뜨지 않았다면 이 PC는 설치 프로그램으로 설치되지 않은 상태입니다. ` +
-        `설치 파일의 <code>${isMac ? "install-mac.sh" : "install.ps1"}</code>로 설치한 뒤, 크롬에서 설치 폴더(` +
-        `<code>${isMac ? "~/Library/Application Support/UTGwReceipt/gw-receipt-helper" : "%LOCALAPPDATA%\\UTGwReceipt\\gw-receipt-helper"}</code>)를 불러와야 ` +
+        `${isMac ? "설치 파일의 <code>install-mac.sh</code>" : "설치 프로그램(<b>유티허브 영수증 등록 도우미 설치.exe</b>)"}로 설치한 뒤, 크롬에서 설치 폴더(` +
+        `<code>${isMac ? "~/Library/Application Support/UTGwReceipt/gw-receipt-helper" : "C:\\UTGwReceipt\\gw-receipt-helper"}</code>)를 불러와야 ` +
         "자동 업데이트가 됩니다(📖 매뉴얼 2장). 계속 기다리는 중…";
     }
   }, 15000);
@@ -821,7 +821,7 @@ async function runUpdate(latest) {
       btn.disabled = false;
       if (tab?.id) chrome.tabs.remove(tab.id).catch(() => {});
       msg.innerHTML = "업데이트를 확인하지 못했습니다. 잠시 후 다시 누르거나, 1시간 안에 자동으로 업데이트됩니다. " +
-        `(계속되면 <code>${isMac ? "~/Library/Application Support/UTGwReceipt/update.log" : "%LOCALAPPDATA%\\UTGwReceipt\\update.log"}</code> 확인)`;
+        `(계속되면 <code>${isMac ? "~/Library/Application Support/UTGwReceipt/update.log" : "C:\\UTGwReceipt\\update.log"}</code> 확인)`;
     }
   }, 3000);
 }
