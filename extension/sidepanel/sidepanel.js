@@ -803,10 +803,10 @@ async function runUpdate(latest) {
   setTimeout(async () => {
     btn.disabled = false;
     if (isNewer(latest, await diskVersion())) {
-      msg.innerHTML = `${isMac ? "업데이트 도우미" : "PowerShell"} 창이 뜨지 않았다면 이 PC는 설치 프로그램으로 설치되지 않은 상태입니다. ` +
-        `${isMac ? "설치 파일의 <code>install-mac.sh</code>" : "설치 프로그램(<b>유티허브 영수증 등록 도우미 설치.exe</b>)"}로 설치한 뒤, 크롬에서 설치 폴더(` +
-        `<code>${isMac ? "~/Library/Application Support/UTGwReceipt/gw-receipt-helper" : "C:\\UTGwReceipt\\gw-receipt-helper"}</code>)를 불러와야 ` +
-        "자동 업데이트가 됩니다(📖 매뉴얼 2장). 계속 기다리는 중…";
+      // 정상 설치 PC도 업데이트는 창 없이 진행되므로, 판단은 '크롬의 열기 확인 창'과 '로드 위치'로 안내한다
+      msg.innerHTML = `크롬이 '${isMac ? "UTGwReceipt Updater" : "PowerShell"} 열기'를 묻지 않았다면 설치 프로그램으로 설치되지 않았을 수 있습니다. ` +
+        "<code>chrome://extensions</code> → 세부정보의 <b>로드 위치</b>가 <code>UTGwReceipt</code> 폴더면 정상이니 잠시 기다리세요(1시간 안에 자동 업데이트). " +
+        `다른 폴더면 ${isMac ? "설치 파일의 <code>install-mac.sh</code>" : "설치 프로그램(exe)"}로 설치한 뒤 설치 창이 알려준 폴더로 다시 불러오세요(📖 매뉴얼 6장). 계속 기다리는 중…`;
     }
   }, 15000);
   const timer = setInterval(async () => {

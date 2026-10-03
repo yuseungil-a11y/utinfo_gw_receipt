@@ -13,6 +13,22 @@ $version = $manifest.version
 $dist = Join-Path $root "dist"
 New-Item -ItemType Directory -Force $dist | Out-Null
 
+# ZIP 만들기: 항목 경로 구분자를 '/'로 저장 (PS 5.1 Compress-Archive는 '\'로 저장해 맥에서 폴더가 아닌 파일 이름으로 풀림)
+Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
+function New-Zip([string]$baseDir, [string[]]$items, [string]$zipPath) {
+    $zip = [IO.Compression.ZipFile]::Open($zipPath, [IO.Compression.ZipArchiveMode]::Create)
+    try {
+        foreach ($item in $items) {
+            $full = Join-Path $baseDir $item
+            $files = if (Test-Path $full -PathType Container) { Get-ChildItem $full -Recurse -File } else { @(Get-Item $full) }
+            foreach ($f in $files) {
+                $rel = $f.FullName.Substring($baseDir.TrimEnd('\').Length + 1).Replace('\', '/')
+                [void][IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $f.FullName, $rel, [IO.Compression.CompressionLevel]::Optimal)
+            }
+        }
+    } finally { $zip.Dispose() }
+}
+
 $stage = Join-Path ([System.IO.Path]::GetTempPath()) "gw-receipt-build"
 if (Test-Path $stage) { [IO.Directory]::Delete($stage, $true) }
 
@@ -21,7 +37,7 @@ $upd = Join-Path $stage "update"
 Copy-Item $ext (Join-Path $upd "gw-receipt-helper") -Recurse
 $zip1 = Join-Path $dist "gw-receipt-helper-v$version.zip"
 if (Test-Path $zip1) { [IO.File]::Delete($zip1) }
-Compress-Archive -Path (Join-Path $upd "gw-receipt-helper") -DestinationPath $zip1
+New-Zip $upd @("gw-receipt-helper") $zip1
 
 # 게시판 배포용 설치 파일
 $set = Join-Path $stage "setup"
@@ -32,7 +48,7 @@ Copy-Item (Join-Path $root "tools\install-mac.sh"), (Join-Path $root "tools\upda
 # 게시판에 올리는 파일은 직원이 알아보기 쉽게 한글 이름 (GitHub Release 첨부는 영문 이름 유지)
 $zip2 = Join-Path $dist "유티허브 영수증 등록 도우미 v$version.zip"
 if (Test-Path $zip2) { [IO.File]::Delete($zip2) }
-Compress-Archive -Path (Join-Path $set "*") -DestinationPath $zip2
+New-Zip $set @(Get-ChildItem $set | ForEach-Object Name) $zip2
 
 # 설치 exe (윈도우 기본 IExpress): 더블클릭 → install.cmd → install.ps1 이 GitHub 최신 버전을 C:\UTGwReceipt 에 설치
 # exe에는 확장 프로그램 파일을 넣지 않는다(IExpress는 하위 폴더 미지원) — 설치 시 항상 최신 Release를 받음
