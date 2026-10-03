@@ -45,7 +45,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           # Release 설명 = CHANGELOG.md의 "## v<버전>" 절 (확장 프로그램의 '변경 내용 보기'가 이 설명을 보여줌)
-          awk -v h="## v$VERSION" '{ t = $0; sub(/[ 	]+$/, "", t) } t==h {f=1; next} /^## v/ {f=0} f' CHANGELOG.md > notes.md
+          awk -v h="## v$VERSION" '{ t = $0; sub(/[ \t\r]+$/, "", t) } t==h {f=1; next} /^## v/ {f=0} f' CHANGELOG.md > notes.md
           if ! grep -q '[^[:space:]]' notes.md; then
             echo "::error::CHANGELOG.md에 '## v$VERSION' 절이 없습니다."
             exit 1
