@@ -200,10 +200,43 @@ async function runInPage(func, args = []) {
   return result;
 }
 
-async function loadMeta({ silent = false } = {}) {
+// 그룹웨어 목록을 불러올 탭: 지금 보고 있는 UTHub 탭, 없으면 열려 있는 아무 UTHub 탭(로그인 화면 제외)
+async function anyGroupwareTab() {
+  const [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const isGw = (t) => { try { return new URL(t?.url || "").hostname === "uthub.utinfo.co.kr"; } catch { return false; } };
+  if (isGw(active)) return active;
+  const tabs = await chrome.tabs.query({ url: ["https://uthub.utinfo.co.kr/*", "http://uthub.utinfo.co.kr/*"] });
+  return tabs.find((t) => t.status === "complete" && !/\/login/i.test(t.url || "")) || null;
+}
+
+const needMeta = () => !settings.metaLoadedAt || !settings.categories.length || !settings.projects.length ||
+  Date.now() - new Date(settings.metaLoadedAt).getTime() > META_STALE_MS;
+
+// 자동 불러오기: 목록이 없거나 오래됐으면 UTHub 탭이 보일 때마다 조용히 시도 (15초 간격, 동시 실행 방지)
+let autoMetaBusy = false, autoMetaLast = 0;
+async function autoLoadMeta() {
+  if (!needMeta() || autoMetaBusy || Date.now() - autoMetaLast < 15 * 1000) return;
+  const tab = await anyGroupwareTab().catch(() => null);
+  if (!tab) {
+    if (!settings.categories.length) renderMetaStatus("UTHub에 로그인한 탭을 열면 프로젝트·지출 유형을 자동으로 불러옵니다.");
+    return;
+  }
+  autoMetaBusy = true; autoMetaLast = Date.now();
+  try { await loadMeta({ silent: true, tab }); } finally { autoMetaBusy = false; }
+}
+
+async function loadMeta({ silent = false, tab = null } = {}) {
   if (!silent) renderMetaStatus("불러오는 중…");
   try {
-    const meta = await runInPage(fetchGroupwareMeta);
+    const target = tab || await groupwareTab();
+    const [{ result: meta }] = await chrome.scripting.executeScript({ target: { tabId: target.id }, world: "MAIN", func: fetchGroupwareMeta });
+    // 로그인 전 등으로 아무것도 못 불러왔으면 '불러옴'으로 기록하지 않고 다음 기회에 다시 시도
+    if (!meta.projects.length && !meta.categories.length) {
+      // 이미 목록이 있으면(12시간 지난 갱신 실패) 정상 상태 문구를 그대로 둠
+      if (!settings.categories.length || !silent) renderMetaStatus("UTHub에 로그인한 뒤 다시 불러옵니다.");
+      if (!silent) alert(`그룹웨어 목록을 불러오지 못했습니다. UTHub에 로그인했는지 확인하세요.\n${meta.warnings.join("\n")}`);
+      return;
+    }
     const prev = new Map(settings.projects.map((p) => [p.id, p]));
     const patch = { metaLoadedAt: new Date().toISOString() };
     if (meta.projects.length) {
@@ -218,8 +251,9 @@ async function loadMeta({ silent = false } = {}) {
     if (meta.categories.length) patch.categories = meta.categories;
     settings = { ...settings, ...patch };
     await saveSettings(patch);
-    // 목록 관련 칸만 다시 그림 — 저장 전인 API 키·힌트 입력값은 건드리지 않음
-    renderProjectsField();
+    // 목록 관련 칸만 다시 그림 — 저장 전인 API 키·힌트 입력값은 건드리지 않음.
+    // 자동 불러오기 중 사용자가 프로젝트 칸(별칭)을 편집하고 있으면 그 칸도 덮어쓰지 않음(저장 시 반영)
+    if (!(silent && document.activeElement === $("#projects"))) renderProjectsField();
     renderMetaStatus();
     items.forEach(rematchProject);
     render();
@@ -701,10 +735,14 @@ document.addEventListener("drop", (e) => {
 renderSettings();
 if (!settings.apiKey) $("#settings").hidden = false;
 render();
-// UTHub 탭이 열려 있고 목록이 오래됐으면 조용히 갱신
-if (!settings.metaLoadedAt || Date.now() - new Date(settings.metaLoadedAt).getTime() > META_STALE_MS) {
-  loadMeta({ silent: true });
-}
+// 목록이 없거나 오래됐으면 조용히 불러오기 — 지금 열려 있는 UTHub 탭에서, 없으면 UTHub 탭이 열리거나 로그인되는 순간
+autoLoadMeta();
+// 로그인 직후처럼 탭 이벤트가 15초 제한에 걸리거나(또는 화면 전환 없는 로그인) 놓친 경우를 위해, 목록이 비어 있는 동안만 30초마다 재시도
+setInterval(() => { if (!settings.categories.length || !settings.projects.length) autoLoadMeta(); }, 30 * 1000);
+chrome.tabs.onUpdated.addListener((_, info, tab) => {
+  if (info.status === "complete" && /^https?:\/\/uthub\.utinfo\.co\.kr\//.test(tab.url || "")) autoLoadMeta();
+});
+chrome.tabs.onActivated.addListener(() => autoLoadMeta());
 // ---------- 업데이트 알림 + "지금 업데이트" ----------
 // GitHub Releases에 더 새 버전이 있으면 상단 배너와 업데이트 버튼을 보여준다 (실패하면 조용히 무시).
 const isNewer = (a, b) => {

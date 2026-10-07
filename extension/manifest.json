@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "UTHub 카드영수증 도우미",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "카드영수증 이미지를 Claude로 분석해 계정과목·프로젝트를 추천하고, UTHub 지급품의(개인 D005·법인 D015) 화면에 입력합니다.",
   "icons": {
     "16": "icons/icon16.png",
