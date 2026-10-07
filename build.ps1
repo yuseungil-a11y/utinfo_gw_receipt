@@ -42,6 +42,8 @@ New-Zip $upd @("gw-receipt-helper") $zip1
 # 게시판 배포용 설치 파일
 $set = Join-Path $stage "setup"
 Copy-Item $ext (Join-Path $set "gw-receipt-helper") -Recurse
+# 압축 푼 폴더를 크롬에 직접 불러오면 사이드패널이 경고하도록 표시 파일 (설치 프로그램은 이 파일을 빼고 설치, 업데이트 zip에는 없음)
+[IO.File]::WriteAllText((Join-Path $set "gw-receipt-helper\portable.json"), '{"portable": true}')
 Copy-Item (Join-Path $root "tools\install.cmd"), (Join-Path $root "tools\install.ps1"), (Join-Path $root "tools\update.ps1"), (Join-Path $root "tools\uninstall.ps1") $set
 # 맥용 설치/업데이트/제거 스크립트도 같은 ZIP에 (윈도우·맥 공용 설치 파일)
 Copy-Item (Join-Path $root "tools\install-mac.sh"), (Join-Path $root "tools\update-mac.sh"), (Join-Path $root "tools\uninstall-mac.sh") $set

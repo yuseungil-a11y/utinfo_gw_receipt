@@ -93,3 +93,8 @@ fieldset.approval legend { font-weight: 600; padding: 0 4px; }
 .modalBody ul { margin: 0; padding-left: 18px; } .modalBody li { margin: 4px 0; }
 .modalBody p { margin: 0; color: var(--muted); }
 .modalBtns { justify-content: flex-end; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--line); }
+
+/* 압축 푼 폴더에서 실행 중 경고 */
+.portableBanner { margin: 0 0 10px; padding: 8px 10px; border: 1px solid #fca5a5; background: #fef2f2; color: #7f1d1d; border-radius: 8px; font-size: 12px; }
+.portableBanner ol { margin: 6px 0; padding-left: 18px; } .portableBanner li { margin: 3px 0; }
+.portableBanner code { font-size: 11px; word-break: break-all; }

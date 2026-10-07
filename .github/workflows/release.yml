@@ -36,6 +36,8 @@ jobs:
           # 2) 게시판 배포용 설치 파일: 확장 프로그램 + 설치/업데이트/제거 스크립트(윈도우 .ps1 · 맥 .sh)
           mkdir -p dist/setup
           cp -r extension dist/setup/gw-receipt-helper
+          # 압축 푼 폴더를 크롬에 직접 불러오면 사이드패널이 경고하도록 표시 파일 (설치 프로그램은 이 파일을 빼고 설치, 업데이트 zip에는 없음)
+          echo '{"portable": true}' > dist/setup/gw-receipt-helper/portable.json
           cp tools/install.cmd tools/install.ps1 tools/update.ps1 tools/uninstall.ps1 dist/setup/
           cp tools/install-mac.sh tools/update-mac.sh tools/uninstall-mac.sh dist/setup/
           (cd dist/setup && zip -r "../gw-receipt-helper-setup-v$VERSION.zip" .)

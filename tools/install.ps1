@@ -52,8 +52,10 @@ try {
     if ((Test-Path (Join-Path $bundledExt "manifest.json")) -and (Test-Path $bundledUpdate)) {
         # 게시판 설치 ZIP: 함께 들어 있는 파일로 설치 (GitHub 접속 불필요)
         New-Item -ItemType Directory -Force $ExtDir | Out-Null
-        robocopy $bundledExt $ExtDir /MIR /NFL /NDL /NJH /NJS /NP | Out-Null
+        # portable.json = "압축 푼 폴더" 표시 파일(게시판 zip에만 있음) — 설치 폴더에는 넣지 않음
+        robocopy $bundledExt $ExtDir /MIR /XF portable.json /NFL /NDL /NJH /NJS /NP | Out-Null
         if ($LASTEXITCODE -ge 8) { throw "파일 복사 실패 (robocopy $LASTEXITCODE)" }
+        Remove-Item (Join-Path $ExtDir "portable.json") -Force -ErrorAction SilentlyContinue
         Copy-Item $bundledUpdate $UpdateScript -Force
         # 제거 스크립트도 설치 폴더에 둔다 (내려받은 압축 폴더를 지워도 제거 가능)
         $bundledUninstall = Join-Path $Here "uninstall.ps1"

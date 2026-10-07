@@ -24,7 +24,9 @@ mkdir -p "$INSTALL_ROOT" || die "폴더를 만들 수 없습니다: $INSTALL_ROO
 if [ -f "$HERE/gw-receipt-helper/manifest.json" ] && [ -f "$HERE/update-mac.sh" ]; then
   # 게시판 설치 ZIP: 함께 들어 있는 파일로 설치 (GitHub 접속 불필요)
   mkdir -p "$EXT_DIR"
-  rsync -a --delete "$HERE/gw-receipt-helper/" "$EXT_DIR/" || die "파일 복사 실패"
+  # portable.json = "압축 푼 폴더" 표시 파일(게시판 zip에만 있음) — 설치 폴더에는 넣지 않음
+  rsync -a --delete --exclude portable.json "$HERE/gw-receipt-helper/" "$EXT_DIR/" || die "파일 복사 실패"
+  rm -f "$EXT_DIR/portable.json"
   cp "$HERE/update-mac.sh" "$INSTALL_ROOT/update-mac.sh" || die "update-mac.sh 복사 실패"
   [ -f "$HERE/uninstall-mac.sh" ] && cp "$HERE/uninstall-mac.sh" "$INSTALL_ROOT/uninstall-mac.sh"
   echo "설치 파일에서 v$(sed -nE 's/.*"version"[[:space:]]*:[[:space:]]*"([0-9.]+)".*/\1/p' "$EXT_DIR/manifest.json" | head -1) 설치"

@@ -723,6 +723,24 @@ async function diskVersion() {
   } catch { return ""; }
 }
 
+// 압축을 푼 폴더(게시판 zip)를 크롬에 직접 불러온 경우: 그 폴더에만 있는 portable.json 으로 알아내 경고.
+// 이 상태로는 자동 업데이트가 반영되지 않으므로 설치 프로그램으로 설치 후 설치 폴더를 다시 불러오게 안내한다.
+async function checkPortable() {
+  try {
+    const res = await fetch(chrome.runtime.getURL("portable.json"), { cache: "no-store" });
+    if (!res.ok) return;
+  } catch { return; } // 파일 없음 = 설치 폴더에서 실행 중(정상)
+  const isMac = /Mac/i.test(navigator.userAgentData?.platform || navigator.platform || "");
+  const banner = $("#portableBanner");
+  banner.innerHTML =
+    "<strong>⚠ 압축을 푼 폴더에서 실행 중입니다 — 이대로는 자동 업데이트가 되지 않습니다.</strong>" +
+    `<ol><li>${isMac ? "압축 푼 폴더의 <code>install-mac.sh</code>를 터미널에서 <code>bash</code>로 실행" : "설치 프로그램(exe)을 실행하거나, 압축 푼 폴더의 <code>install.cmd</code>를 더블클릭"}해 설치합니다.</li>` +
+    "<li><code>chrome://extensions</code>에서 지금 이 도우미를 <b>삭제</b>합니다.</li>" +
+    `<li><b>압축해제된 확장 프로그램을 로드합니다</b>로 설치 폴더 <code>${isMac ? "~/Library/Application Support/UTGwReceipt/gw-receipt-helper" : "C:\\UTGwReceipt\\gw-receipt-helper"}</code>를 불러옵니다(설치 창이 알려준 경로).</li></ol>` +
+    "<small>API 키·결재선은 다시 입력해야 합니다. 자세한 방법: 📖 매뉴얼 2장</small>";
+  banner.hidden = false;
+}
+
 async function checkUpdate() {
   try {
     const res = await fetch(RELEASES_API, { headers: { Accept: "application/vnd.github+json" } });
@@ -828,3 +846,4 @@ async function runUpdate(latest) {
 
 // 함수·상수 정의가 모두 끝난 뒤 새 버전 확인 (isNewer 등 const 참조 순서 보장)
 checkUpdate();
+checkPortable();
