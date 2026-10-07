@@ -11,6 +11,8 @@ $task = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
 if ($task) {
     foreach ($a in $task.Actions) {
         if ($a.Arguments -match '-InstallRoot\s+"([^"]+)"') { $candidates += $Matches[1] }
+        # v0.6.2부터 작업은 wscript "<설치폴더>\update-hidden.vbs" 를 실행
+        if ($a.Arguments -match '"([^"]+)\\update-hidden\.vbs"') { $candidates += $Matches[1] }
     }
 }
 if ($PSScriptRoot) { $candidates += $PSScriptRoot }

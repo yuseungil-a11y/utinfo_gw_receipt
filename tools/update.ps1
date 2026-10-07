@@ -22,20 +22,60 @@ function Write-Log([string]$msg) {
 
 # 확장 프로그램의 "지금 업데이트" 버튼이 이 스크립트를 바로 실행할 수 있도록
 # 현재 사용자용 URL 프로토콜(utgwr-update://)을 등록한다. (HKCU, 관리자 권한 불필요, 매번 갱신)
-function Register-UpdateProtocol([string]$scriptPath, [string]$root) {
+function Register-UpdateProtocol([string]$launcher) {
     $base = "HKCU:\Software\Classes\utgwr-update"
     New-Item -Path "$base\shell\open\command" -Force | Out-Null
     Set-ItemProperty -Path $base -Name "(default)" -Value "URL:UTGwReceipt Update"
     Set-ItemProperty -Path $base -Name "URL Protocol" -Value ""
-    $cmd = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`" -InstallRoot `"$root`""
-    Set-ItemProperty -Path "$base\shell\open\command" -Name "(default)" -Value $cmd
+    Set-ItemProperty -Path "$base\shell\open\command" -Name "(default)" -Value "wscript.exe `"$launcher`""
+}
+
+# 창 없이 실행하는 실행기(update-hidden.vbs). 작업 스케줄러가 powershell.exe 를 직접 띄우면
+# -WindowStyle Hidden 이어도 콘솔 창이 잠깐 깜빡이므로, wscript 가 창 없이(0) PowerShell 을 실행하게 한다.
+function New-HiddenLauncher([string]$root) {
+    $vbs = Join-Path $root "update-hidden.vbs"
+    $ps1 = Join-Path $root "update.ps1"
+    $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """"$ps1"""" -InstallRoot """"$root"""""
+    $text = "' UTHub 카드영수증 도우미 - 자동 업데이트를 창 없이 실행`r`nCreateObject(""WScript.Shell"").Run ""$cmd"", 0, False`r`n"
+    # 한글 경로를 위해 UTF-16(BOM) 으로 저장 — wscript 가 유니코드 스크립트로 읽음
+    [IO.File]::WriteAllText($vbs, $text, [Text.Encoding]::Unicode)
+    return $vbs
+}
+
+# 이 PC에서 wscript(VBScript)를 쓸 수 있는지 — 회사 정책으로 꺼져 있거나 윈도우에서 제거된 PC는 기존 방식 유지
+function Test-Wsh {
+    if (-not (Test-Path "$env:WINDIR\System32\vbscript.dll")) { return $false }
+    foreach ($k in "HKLM:\Software\Microsoft\Windows Script Host\Settings", "HKCU:\Software\Microsoft\Windows Script Host\Settings") {
+        $v = (Get-ItemProperty $k -Name Enabled -ErrorAction SilentlyContinue).Enabled
+        if ($null -ne $v -and "$v" -eq "0") { return $false }
+    }
+    return $true
+}
+
+# 이미 등록된 자동 업데이트 작업이 powershell.exe 를 직접 실행하고 있으면(예전 설치) 창 없는 실행기로 바꾼다
+function Use-HiddenTask([string]$launcher) {
+    if (-not (Test-Wsh)) { return }
+    $task = Get-ScheduledTask -TaskName "UTGwReceipt-AutoUpdate" -ErrorAction SilentlyContinue
+    if ($task -and ($task.Actions | Where-Object { $_.Execute -notmatch 'wscript' })) {
+        $action = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$launcher`""
+        Set-ScheduledTask -TaskName "UTGwReceipt-AutoUpdate" -Action $action | Out-Null
+        Write-Log "자동 업데이트 작업을 창 없이 실행하도록 변경"
+    }
 }
 
 try {
-    # 레지스트리 정책 등으로 실패해도 업데이트 자체는 계속 (버튼만 못 쓰게 됨)
+    # 레지스트리·작업 정책 등으로 실패해도 업데이트 자체는 계속 (버튼만 못 쓰거나 창이 잠깐 보일 뿐)
     if (-not $SkipProtocol) {
-        try { Register-UpdateProtocol (Join-Path $InstallRoot "update.ps1") $InstallRoot }
-        catch { Write-Log "경고: 업데이트 버튼용 프로토콜 등록 실패 - $($_.Exception.Message)" }
+        try {
+            $launcher = New-HiddenLauncher $InstallRoot
+            if (Test-Wsh) {
+                Register-UpdateProtocol $launcher
+                Use-HiddenTask $launcher
+            } else {
+                Write-Log "참고: 이 PC는 VBScript(wscript)를 쓸 수 없어 기존 방식(PowerShell 직접 실행)으로 업데이트합니다"
+            }
+        }
+        catch { Write-Log "경고: 업데이트 실행기·버튼 등록 실패 - $($_.Exception.Message)" }
     }
 
     $headers = @{ "User-Agent" = "UTGwReceipt-Updater"; "Accept" = "application/vnd.github+json" }

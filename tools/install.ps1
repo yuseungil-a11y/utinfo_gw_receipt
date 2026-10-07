@@ -76,17 +76,30 @@ try {
         if ($LASTEXITCODE -ne 0) { throw "설치 실패 - $InstallRoot\update.log 를 확인하세요." }
     }
 
+    # 창 없는 실행기(update-hidden.vbs): powershell.exe 를 작업 스케줄러가 직접 띄우면 콘솔 창이 잠깐 깜빡이므로
+    # wscript 가 창 없이 실행하게 한다. (update.ps1 도 매번 같은 파일을 만들지만, 옛 update.ps1 을 받은 경우를 위해 여기서도 만듦)
+    $Launcher = Join-Path $InstallRoot "update-hidden.vbs"
+    $psCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """"$UpdateScript"""" -InstallRoot """"$InstallRoot"""""
+    [IO.File]::WriteAllText($Launcher, "' UTHub 카드영수증 도우미 - 자동 업데이트를 창 없이 실행`r`nCreateObject(""WScript.Shell"").Run ""$psCmd"", 0, False`r`n", [Text.Encoding]::Unicode)
+    # 회사 정책으로 VBScript(wscript)가 꺼진 PC는 PowerShell 직접 실행(창이 잠깐 보임)으로 — 업데이트가 멈추지 않게
+    $wshOk = Test-Path "$env:WINDIR\System32\vbscript.dll"
+    foreach ($k in "HKLM:\Software\Microsoft\Windows Script Host\Settings", "HKCU:\Software\Microsoft\Windows Script Host\Settings") {
+        $v = (Get-ItemProperty $k -Name Enabled -ErrorAction SilentlyContinue).Enabled
+        if ($null -ne $v -and "$v" -eq "0") { $wshOk = $false }
+    }
+    $psDirect = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$UpdateScript`" -InstallRoot `"$InstallRoot`""
+
     # 확장 프로그램 "지금 업데이트" 버튼용 URL 프로토콜(utgwr-update://) 등록 — 현재 사용자, 관리자 권한 불필요
     $proto = "HKCU:\Software\Classes\utgwr-update"
     New-Item -Path "$proto\shell\open\command" -Force | Out-Null
     Set-ItemProperty -Path $proto -Name "(default)" -Value "URL:UTGwReceipt Update"
     Set-ItemProperty -Path $proto -Name "URL Protocol" -Value ""
     Set-ItemProperty -Path "$proto\shell\open\command" -Name "(default)" `
-        -Value "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$UpdateScript`" -InstallRoot `"$InstallRoot`""
+        -Value $(if ($wshOk) { "wscript.exe `"$Launcher`"" } else { "powershell.exe $psDirect" })
 
     # 자동 업데이트 작업 등록 (현재 사용자, 창 없이 실행) — 업데이트는 GitHub Release에서 받음
-    $action = New-ScheduledTaskAction -Execute "powershell.exe" `
-        -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$UpdateScript`" -InstallRoot `"$InstallRoot`""
+    $action = if ($wshOk) { New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$Launcher`"" }
+              else { New-ScheduledTaskAction -Execute "powershell.exe" -Argument $psDirect }
     $hourly = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Hours 1)
     $logon = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
     $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
