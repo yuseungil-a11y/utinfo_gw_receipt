@@ -1,4 +1,4 @@
-﻿# 영수증 등록 도우미 - 자동 업데이트
+﻿# UTHub 카드 영수증 등록 도우미 - 자동 업데이트
 # GitHub Release 최신 버전을 확인해 설치 폴더(gw-receipt-helper)를 새 버전으로 교체한다.
 # 작업 스케줄러가 1시간마다 실행. 수동 실행: powershell -ExecutionPolicy Bypass -File update.ps1
 param(
@@ -36,7 +36,7 @@ function New-HiddenLauncher([string]$root) {
     $vbs = Join-Path $root "update-hidden.vbs"
     $ps1 = Join-Path $root "update.ps1"
     $cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """"$ps1"""" -InstallRoot """"$root"""""
-    $text = "' 영수증 등록 도우미 - 자동 업데이트를 창 없이 실행`r`nCreateObject(""WScript.Shell"").Run ""$cmd"", 0, False`r`n"
+    $text = "' UTHub 카드 영수증 등록 도우미 - 자동 업데이트를 창 없이 실행`r`nCreateObject(""WScript.Shell"").Run ""$cmd"", 0, False`r`n"
     # 한글 경로를 위해 UTF-16(BOM) 으로 저장 — wscript 가 유니코드 스크립트로 읽음
     [IO.File]::WriteAllText($vbs, $text, [Text.Encoding]::Unicode)
     return $vbs

@@ -1,5 +1,5 @@
 #!/bin/bash
-# 영수증 등록 도우미 - 자동 업데이트 (macOS)
+# UTHub 카드 영수증 등록 도우미 - 자동 업데이트 (macOS)
 # GitHub Release 최신 버전을 확인해 설치 폴더(gw-receipt-helper)를 새 버전으로 교체한다.
 # launchd가 1시간마다·로그인 시 실행. 수동 실행: bash "$HOME/Library/Application Support/UTGwReceipt/update-mac.sh"
 # 윈도우판 update.ps1과 같은 동작 (API 대신 releases/latest 주소의 이동 위치로 최신 태그를 확인 — jq 불필요)

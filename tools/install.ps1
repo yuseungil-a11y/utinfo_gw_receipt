@@ -1,4 +1,4 @@
-﻿# 영수증 등록 도우미 - 설치 (PC당 1회, 관리자 권한 불필요)
+﻿# UTHub 카드 영수증 등록 도우미 - 설치 (PC당 1회, 관리자 권한 불필요)
 # 게시판에서 받은 설치 ZIP을 풀고 이 파일을 실행한다.
 # 1) 같은 폴더의 gw-receipt-helper 를 C:\UTGwReceipt\gw-receipt-helper 로 복사
 #    (같은 폴더에 없으면 GitHub 최신 Release에서 받음 — 설치 exe는 이 방식)
@@ -82,7 +82,7 @@ try {
     # wscript 가 창 없이 실행하게 한다. (update.ps1 도 매번 같은 파일을 만들지만, 옛 update.ps1 을 받은 경우를 위해 여기서도 만듦)
     $Launcher = Join-Path $InstallRoot "update-hidden.vbs"
     $psCmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -File """"$UpdateScript"""" -InstallRoot """"$InstallRoot"""""
-    [IO.File]::WriteAllText($Launcher, "' 영수증 등록 도우미 - 자동 업데이트를 창 없이 실행`r`nCreateObject(""WScript.Shell"").Run ""$psCmd"", 0, False`r`n", [Text.Encoding]::Unicode)
+    [IO.File]::WriteAllText($Launcher, "' UTHub 카드 영수증 등록 도우미 - 자동 업데이트를 창 없이 실행`r`nCreateObject(""WScript.Shell"").Run ""$psCmd"", 0, False`r`n", [Text.Encoding]::Unicode)
     # 회사 정책으로 VBScript(wscript)가 꺼진 PC는 PowerShell 직접 실행(창이 잠깐 보임)으로 — 업데이트가 멈추지 않게
     $wshOk = Test-Path "$env:WINDIR\System32\vbscript.dll"
     foreach ($k in "HKLM:\Software\Microsoft\Windows Script Host\Settings", "HKCU:\Software\Microsoft\Windows Script Host\Settings") {
@@ -106,7 +106,7 @@ try {
     $logon = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAME"
     $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
     Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger @($hourly, $logon) -Settings $settings `
-        -Description "영수증 등록 도우미 자동 업데이트 (GitHub Release 확인)" -Force | Out-Null
+        -Description "UTHub 카드 영수증 등록 도우미 자동 업데이트 (GitHub Release 확인)" -Force | Out-Null
 
     # 설치 폴더에 더블클릭용 제거 파일을 둔다 (PowerShell을 몰라도 제거 가능)
     # 한 줄로 실행 후 종료: 제거 중 이 cmd 파일 자체가 지워져도 다음 줄을 읽으려다 오류 나지 않게, 작업 폴더도 바깥(%TEMP%)으로

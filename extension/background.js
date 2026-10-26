@@ -41,7 +41,7 @@ async function checkLatestOnStart() {
     await chrome.action.setBadgeText({ text: newer ? "UP" : "" });
     if (newer) {
       await chrome.action.setBadgeBackgroundColor({ color: "#2563eb" });
-      await chrome.action.setTitle({ title: `영수증 등록 도우미 — 새 버전 v${latest} 있음 (열어서 업데이트)` });
+      await chrome.action.setTitle({ title: `UTHub 카드 영수증 등록 도우미 — 새 버전 v${latest} 있음 (열어서 업데이트)` });
     }
   } catch { /* 오프라인 등 — 다음 시작 때 다시 */ }
 }
