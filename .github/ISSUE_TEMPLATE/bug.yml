@@ -9,7 +9,7 @@ body:
     id: version
     attributes:
       label: 확장 프로그램 버전
-      description: chrome://extensions 의 "UTHub 카드영수증 도우미" 카드에 표시된 버전
+      description: chrome://extensions 의 "영수증 등록 도우미" 카드에 표시된 버전
       placeholder: "0.1.0"
     validations:
       required: true

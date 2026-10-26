@@ -86,7 +86,7 @@ InstallPrompt=
 DisplayLicense=
 FinishMessage=
 TargetName=$exeTmp
-FriendlyName=UTHub Card Receipt Helper Setup
+FriendlyName=Receipt Registration Helper Setup
 AppLaunched=cmd /c .\install.cmd
 PostInstallCmd=<None>
 AdminQuietInstCmd=
@@ -111,8 +111,8 @@ if (-not (Test-Path $rcedit)) {
     Invoke-WebRequest "https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe" -OutFile $rcedit -UseBasicParsing
 }
 & $rcedit $exeTmp --set-icon (Join-Path $root "tools\setup.ico") `
-    --set-version-string "FileDescription" "UTHub Card Receipt Helper Setup" `
-    --set-version-string "ProductName" "UTHub Card Receipt Helper" `
+    --set-version-string "FileDescription" "Receipt Registration Helper Setup" `
+    --set-version-string "ProductName" "Receipt Registration Helper" `
     --set-version-string "CompanyName" "UTinfo" --set-file-version $version --set-product-version $version
 if ($LASTEXITCODE -ne 0) { Write-Warning "exe 아이콘 적용 실패 (기본 아이콘으로 계속)" }
 $exe = Join-Path $dist "유티허브 영수증 등록 도우미 설치 v$version.exe"

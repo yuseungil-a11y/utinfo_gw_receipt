@@ -1,5 +1,5 @@
 #!/bin/bash
-# UTHub 카드영수증 도우미 - 설치 (macOS, 맥당 1회, 관리자 권한 불필요)
+# 영수증 등록 도우미 - 설치 (macOS, 맥당 1회, 관리자 권한 불필요)
 # 게시판에서 받은 설치 ZIP을 풀고 터미널에서 실행:  bash install-mac.sh  (파일을 터미널 창에 끌어다 놓아도 됨)
 # 1) 같은 폴더의 gw-receipt-helper 를 ~/Library/Application Support/UTGwReceipt/gw-receipt-helper 로 복사
 #    (같은 폴더에 없으면 GitHub 최신 Release에서 받음)

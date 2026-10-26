@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>유티허브 영수증 등록 도우미 사용 매뉴얼 v0.7.1</title><style>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>유티허브 영수증 등록 도우미 사용 매뉴얼 v0.7.2</title><style>
 @page { size: A4; margin: 16mm 15mm 16mm; }
 @page :first { margin: 0; }
 :root { --navy:#13132d; --blue:#144194; --sky:#36a9e1; --orange:#f39200; --green:#94c11e; --ink:#3d3c3c; --ink2:#1d1d1b; --muted:#706f6f; --line:#dadada; }
@@ -41,7 +41,7 @@ figure img { max-height: none; }
 @media print { .appbar { position: static; } }</style></head><body><header class="appbar"><svg viewBox="-50 -50 100 100" width="30" height="30">
   <g stroke-width="9" stroke-linecap="butt">
   <line x1="-30" y1="-40" x2="30" y2="40" stroke="#f39200"/><line x1="30" y1="-40" x2="-30" y2="40" stroke="#94c11e"/>
-  <line x1="0" y1="-48" x2="0" y2="48" stroke="#36a9e1"/><line x1="-48" y1="0" x2="48" y2="0" stroke="#36a9e1"/></g></svg><strong>UTHub 카드영수증 도우미</strong><span>사용 매뉴얼</span><b class="v">v0.7.1</b></header>
+  <line x1="0" y1="-48" x2="0" y2="48" stroke="#36a9e1"/><line x1="-48" y1="0" x2="48" y2="0" stroke="#36a9e1"/></g></svg><strong>영수증 등록 도우미</strong><span>사용 매뉴얼</span><b class="v">v0.7.2</b></header>
 <main><p>카드영수증 이미지를 넣으면 Claude가 지출일·금액·지출 유형을 읽어 UTHub 지급품의(개인·법인) 화면에 영수증 수만큼 자동 입력하는 크롬 확장 프로그램입니다. 사용자는 프로젝트를 확인하고 완료(요청)만 누르면 됩니다. 결재선(합의자·승인자·수신자)은 설정에 한 번 저장해 두면 자동으로 들어갑니다.</p>
 <h2>1. 배포 방식</h2>
 <p>설치 파일은 <strong>사내 게시판</strong>에 올려 배포하고, 업데이트만 <strong>GitHub</strong>를 씁니다. 각 PC는 GitHub를 1시간마다 확인해 새 버전을 자동으로 설치합니다.</p>
@@ -64,7 +64,7 @@ figure img { max-height: none; }
 </li>
 <li><strong>압축해제된 확장 프로그램을 로드합니다</strong>를 누르고, 폴더 선택 창 위쪽 주소창에 <strong>Ctrl+V</strong> → Enter → <strong>폴더 선택</strong>을 누릅니다(<code>C:\UTGwReceipt\gw-receipt-helper</code>).
 </li>
-<li>"UTHub 카드영수증 도우미"가 목록에 나타나면 성공입니다. 퍼즐(🧩) 아이콘에서 핀(📌)을 눌러 툴바에 고정하고, 설치 창은 Enter로 닫습니다.
+<li>"영수증 등록 도우미"가 목록에 나타나면 성공입니다. 퍼즐(🧩) 아이콘에서 핀(📌)을 눌러 툴바에 고정하고, 설치 창은 Enter로 닫습니다.
 <ul>
 <li>예전에 다른 폴더(압축을 푼 폴더 등)로 불러온 도우미가 있으면 먼저 <strong>삭제</strong>하고 위 폴더로 다시 불러옵니다.
 </li>
